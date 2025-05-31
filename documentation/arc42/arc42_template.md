@@ -89,7 +89,7 @@ The system is a web-based application developed primarily with Ruby on Rails. It
 
 The Teaching Vacancies service interacts with the following external systems and actors:
 
-![System Context Diagram](c4_system_context.puml)
+![System Context Diagram](documentation/arc42/c4_system_context.puml)
 *(The diagram is defined in `documentation/arc42/c4_system_context.puml`)*
 
 *   **Jobseeker (Person):** Searches for jobs, manages their profile, sets up job alerts, and applies for vacancies. Interacts via the main Web Application.
@@ -161,7 +161,7 @@ This section describes the key architectural building blocks (containers in C4 m
 
 The Teaching Vacancies service is comprised of the following main containers:
 
-![Container Diagram](c4_container_diagram.puml)
+![Container Diagram](documentation/arc42/c4_container_diagram.puml)
 *(The diagram is defined in `documentation/arc42/c4_container_diagram.puml`)*
 
 *   **Web Application (Container):**
@@ -459,7 +459,7 @@ The service utilizes multiple environments, each hosted within specific AKS clus
 
 The following diagram illustrates the typical deployment setup, focusing on the Production environment and showing the relationship with other environments:
 
-![Deployment Diagram](c4_deployment_diagram.puml)
+![Deployment Diagram](documentation/arc42/c4_deployment_diagram.puml)
 *(The diagram is defined in `documentation/arc42/c4_deployment_diagram.puml`. It provides a simplified view, especially for shared resources in non-production environments.)*
 
 ### 7.3 Deployment Process
@@ -902,3 +902,69 @@ This glossary defines key terms, acronyms, and abbreviations used in the context
 *   **XSS (Cross-Site Scripting):** A type of web security vulnerability.
 *   **XML (Extensible Markup Language):** A markup language designed to carry data.
 *   **YAML (YAML Ain't Markup Language):** A human-readable data serialization language.
+
+---
+
+## Appendix
+
+### Appendix A: Considerations for Migration to a Java-Based Backend
+
+This appendix provides a high-level overview of potential benefits, key challenges, major risks, and a qualitative estimation of effort involved in migrating the existing Ruby on Rails-based Teaching Vacancies service to a Java-based backend. This analysis is based on general software engineering principles and the known characteristics of the current system. A detailed feasibility study would be required for a definitive assessment.
+
+#### A.1 Potential Benefits
+
+Migrating to a Java-based backend could offer several potential advantages:
+
+*   **Performance and Scalability for Specific Workloads:** The Java Virtual Machine (JVM) and modern Java frameworks (e.g., Spring Boot, Quarkus) are known for strong performance in high-concurrency, CPU-intensive, and memory-intensive scenarios. For a high-traffic service, this could potentially lead to better resource utilization and responsiveness under heavy load.
+*   **Rich Ecosystem and Libraries:** The Java ecosystem is vast, offering a wide range of mature libraries and tools for almost any purpose, including enterprise-grade integrations, security, and monitoring.
+*   **Strong Typing and Maintainability:** Java's static typing can help catch errors at compile time, potentially leading to more robust and maintainable code, especially in large and complex applications.
+*   **Developer Availability:** Java is a widely taught and used language, potentially offering a larger pool of developers. This might be relevant for long-term maintenance and development within a large organization like DfE.
+*   **Enterprise Support and Standards:** Java has strong backing from major enterprise vendors and well-established standards for building large-scale applications (e.g., Jakarta EE).
+*   **Potential for Microservices:** While the current system is a monolith, a migration could be an opportunity to re-architect towards a microservices approach if desired, for which Java has strong framework support.
+*   **Alignment with other DfE Systems:** If other significant DfE systems are Java-based, a migration could lead to better technological alignment, shared infrastructure, and potentially easier integration.
+
+#### A.2 Key Challenges
+
+Migrating a mature Ruby on Rails monolith to a Java backend is a significant undertaking with numerous challenges:
+
+*   **Complete Rewrite of Business Logic:** The entire existing Ruby on Rails codebase (models, views, controllers, services, helpers, jobs) would need to be rewritten in Java using a chosen Java web framework (e.g., Spring Boot, Spring MVC). This includes all business rules, data validation, and application flow logic.
+*   **Paradigm Shift:** Moving from Ruby (a dynamic, interpreted language with strong conventions) to Java (a statically-typed, compiled language) involves a significant paradigm shift. Rails conventions would need to be mapped to equivalents in the chosen Java framework.
+*   **Database Interaction:** While the PostgreSQL database could remain, all data access logic (ActiveRecord in Rails) would need to be replaced, likely with a Java ORM like Hibernate (JPA) or a data mapper like MyBatis. Geospatial queries (PostGIS) would also need to be re-implemented using Java-compatible libraries.
+*   **Frontend Integration:** The existing server-rendered views (Slim templates) and JavaScript (StimulusJS) would either need to be retained (requiring the Java backend to serve them or integrate tightly) or completely redeveloped (e.g., as a separate Single Page Application - SPA).
+*   **Data Migration:** While the schema might remain similar, data type differences or ORM-specific requirements could necessitate a complex data migration strategy. Ensuring data integrity during the transition is critical.
+*   **Re-implementation of Integrations:** All external integrations would need to be re-implemented in Java:
+    *   Authentication: DfE Sign-in (OAuth 2.0), GOV.UK One Login (OIDC).
+    *   Data Exchange: DWP Find a Job (SFTP XML), Publisher ATS API (JSON/HTTPS).
+    *   Utility Services: Google Drive (virus scan), reCAPTCHA, GOV.UK Notify.
+    *   Data Imports: ONS ArcGIS.
+*   **Background Job Processing:** The Sidekiq/Redis infrastructure for background jobs would need a Java equivalent (e.g., Spring Batch, Quartz, or JMS with a message broker like ActiveMQ/RabbitMQ, though Redis could potentially still serve as a broker).
+*   **Testing:** All existing tests (RSpec) would need to be rewritten in Java testing frameworks (e.g., JUnit, Mockito). Achieving equivalent test coverage would be a substantial effort.
+*   **Deployment and Operations:** CI/CD pipelines, monitoring, logging, and operational procedures would need to be adapted or rebuilt for a Java stack on AKS.
+*   **Team Skill Set and Learning Curve:** The existing team would need to be proficient in Java and the chosen Java framework, or new Java developers would need to be brought in. There would be a learning curve even for experienced Java developers to understand the specific business domain.
+*   **Feature Parity and Nuance:** Ensuring that all existing features, including subtle business rules and edge cases, are perfectly replicated in the new system is a major challenge.
+
+#### A.3 Major Risks
+
+Such a migration carries significant risks:
+
+*   **Time and Cost Overruns:** Large-scale rewrites are notoriously prone to underestimation. The project could take significantly longer and cost much more than initially anticipated.
+*   **Service Disruption:** A "big bang" migration carries a high risk of service disruption. A phased approach, while potentially less risky, might be complex to orchestrate for a monolithic application.
+*   **Data Loss or Corruption:** Despite careful planning, data migration always carries a risk of data loss or corruption.
+*   **Introduction of New Bugs:** A complete rewrite will inevitably introduce new bugs and regressions that were not present in the mature Ruby on Rails application.
+*   **Loss of Business Logic Nuances:** Subtle business logic or undocumented features/behaviors in the existing system might be missed during the rewrite.
+*   **Performance Issues in New Stack:** The new Java system might not perform as expected without careful architectural design, performance tuning, and optimization.
+*   **Impact on Ongoing Development:** Resources would be heavily diverted to the migration, likely halting or significantly slowing down the development of new features or improvements on the existing platform.
+*   **User Dissatisfaction:** If the new system has issues, is slower, or changes familiar workflows negatively, it could lead to user dissatisfaction.
+*   **Abandonment Risk:** Given the high effort and long timeline, there's a risk the project could be descoped or abandoned midway if it faces major obstacles or budgetary pressures.
+
+#### A.4 High-Level Effort Estimation
+
+Migrating the Teaching Vacancies service from a mature Ruby on Rails monolith to a Java-based backend would be a **Very High Effort** undertaking, based on this high-level overview.
+
+*   **Qualitative Assessment:** This is effectively a complete greenfield redevelopment of a complex, public-facing government service, but with the added constraint of needing to achieve feature parity and data compatibility with an existing live system.
+*   **Timeline:** For a system of this size and complexity, such a migration would likely require a dedicated, skilled team and could potentially take **1.5 to 3+ years** to design, develop, test, and deploy successfully. This estimation does not include the period of running both systems in parallel if a phased rollout is chosen.
+*   **Team Composition:** The migration would likely require experienced Java architects, senior Java developers, frontend developers (if UI is also changing), database specialists, QA engineers, and DevOps engineers familiar with a Java stack on Azure.
+*   **Cost:** Due to the potential long timeline and need for a specialized team, the cost would likely be substantial.
+
+**Recommendation:**
+A migration of this nature should only be considered if there are exceptionally compelling and well-documented reasons (e.g., severe, unaddressable limitations with the current stack that critically impact DfE's strategic goals, or a DfE-wide mandate to standardize on Java for all services of this scale). A thorough feasibility study, including a detailed cost-benefit analysis and risk assessment, would be an essential prerequisite before committing to such a project. Alternatives, such as targeted performance optimizations of the existing Rails application or strategic decomposition of parts of the monolith into services (which could then be Java-based if appropriate), might offer better value with lower risk.
