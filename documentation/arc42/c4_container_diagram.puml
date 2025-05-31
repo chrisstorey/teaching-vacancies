@@ -1,0 +1,48 @@
+@startuml C4_Container_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Container Diagram for Teaching Vacancies
+
+System_Boundary(teaching_vacancies_boundary, "Teaching Vacancies Service") {
+    Container(web_app, "Web Application", "Ruby on Rails Monolith", "Serves user requests, handles business logic, and renders UI for Jobseekers, Publishers, and Support Users.")
+    ContainerDb(postgres_db, "PostgreSQL Database", "Relational Database", "Stores all application data including vacancies, user profiles, organisations, applications, etc. Uses PostGIS for geospatial data.")
+    ContainerDb(redis, "Redis", "In-Memory Data Store", "Used for caching session data, page fragments, and as a message broker for Sidekiq background jobs.")
+    Container(sidekiq, "Sidekiq Processor", "Ruby", "Handles background job processing, e.g., sending email alerts, data imports/exports, analytics aggregation.")
+
+    Rel(web_app, postgres_db, "Reads/Writes data", "ActiveRecord (TCP/IP)")
+    Rel(web_app, redis, "Reads/Writes cache & session data, Enqueues jobs", "TCP/IP")
+    Rel(sidekiq, postgres_db, "Reads/Writes data for jobs", "ActiveRecord (TCP/IP)")
+    Rel(sidekiq, redis, "Dequeues jobs, Stores job state", "TCP/IP")
+}
+
+Person(jobseeker, "Jobseeker", "Interacts with the service to find and apply for jobs.")
+Person(publisher, "Publisher", "Interacts with the service to post and manage vacancies.")
+Person(support_user, "Support User", "Interacts with the service for administrative and support tasks.")
+
+System_Ext(dfe_signin, "DfE Sign-in", "Authenticates Publishers.")
+System_Ext(govuk_one_login, "GOV.UK One Login", "Authenticates Jobseekers.")
+System_Ext(dwp_find_a_job, "DWP Find a Job", "Receives vacancy data.")
+System_Ext(ats, "Applicant Tracking Systems (ATS)", "Integrates to post/manage vacancies.")
+System_Ext(google_services, "Google Services", "Provides reCAPTCHA and Google Drive for virus scanning.")
+System_Ext(govuk_notify, "GOV.UK Notify", "Sends email notifications.")
+System_Ext(ons_arcgis, "ONS ArcGIS", "Provides geographical polygon data.")
+
+Rel(jobseeker, web_app, "Uses", "HTTPS")
+Rel(publisher, web_app, "Uses", "HTTPS")
+Rel(support_user, web_app, "Uses", "HTTPS")
+
+Rel(web_app, dfe_signin, "Delegates authentication", "HTTPS (OAuth 2.0)")
+Rel(web_app, govuk_one_login, "Delegates authentication", "HTTPS (OpenID Connect)")
+Rel(web_app, google_services, "Uses for bot mitigation & virus scan", "HTTPS/API")
+Rel(web_app, govuk_notify, "Sends emails via", "HTTPS/API")
+
+
+Rel(sidekiq, dwp_find_a_job, "Uploads vacancy XML", "SFTP")
+Rel(sidekiq, ons_arcgis, "Imports polygon data", "HTTPS/API")
+' Potentially web_app or sidekiq for ATS depending on implementation (sync vs async parts of API)
+Rel(web_app, ats, "Interacts with", "HTTPS/JSON (Publisher ATS API)")
+
+
+@enduml

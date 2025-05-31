@@ -1,0 +1,101 @@
+@startuml C4_Deployment_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Deployment Diagram for Teaching Vacancies (Illustrative for Production)
+
+node "Azure Cloud Infrastructure Platform (CIP)" as azure_cip {
+    node "Azure Kubernetes Service (AKS) - Production Cluster" as aks_prod_cluster {
+        tags="s189-teacher-services-cloud-production"
+        database "Azure PostgreSQL Flexible Server" as pg_prod_azure {
+            tags="PostgreSQL"
+            ContainerDb(postgres_db, "Teaching Vacancies DB", "PostgreSQL", "Stores vacancies, users, applications etc.")
+        }
+
+        database "Azure Cache for Redis" as redis_prod_azure {
+            tags="Redis"
+            ContainerDb(redis, "TV Redis Cache", "Redis", "Caching, Session Storage, Sidekiq Broker")
+        }
+
+        node "AKS Namespace: tv-production" as aks_namespace_prod {
+            deploymentNode "Pod(s) - Web App" as web_app_pod {
+                Container(web_app, "Web Application", "Ruby on Rails Monolith", "Serves user requests, handles business logic.")
+            }
+            deploymentNode "Pod(s) - Sidekiq" as sidekiq_pod {
+                Container(sidekiq, "Sidekiq Processor", "Ruby", "Handles background job processing.")
+            }
+        }
+    }
+
+    node "Azure Kubernetes Service (AKS) - Test Cluster" as aks_test_cluster {
+        tags="s189-teacher-services-cloud-test"
+        database "Azure PostgreSQL Flexible Server (Staging)" as pg_staging_azure {
+            tags="PostgreSQL"
+            ContainerDb(postgres_db_staging, "TV Staging DB", "PostgreSQL", " ")
+        }
+        database "Azure Cache for Redis (Staging)" as redis_staging_azure {
+            tags="Redis"
+            ContainerDb(redis_staging, "TV Staging Redis", "Redis", " ")
+        }
+        node "AKS Namespace: tv-staging" as aks_namespace_staging {
+            deploymentNode "Pod(s) - Web App (Staging)" as web_app_pod_staging {
+                Container(web_app_staging, "Web App (Staging)", "Ruby on Rails", " ")
+            }
+            deploymentNode "Pod(s) - Sidekiq (Staging)" as sidekiq_pod_staging {
+                Container(sidekiq_staging, "Sidekiq (Staging)", "Ruby", " ")
+            }
+        }
+
+        database "Azure PostgreSQL Flexible Server (QA/Review)" as pg_qa_azure {
+            tags="PostgreSQL"
+            ContainerDb(postgres_db_qa, "TV QA/Review DB", "PostgreSQL", " ")
+        }
+        database "Azure Cache for Redis (QA/Review)" as redis_qa_azure {
+            tags="Redis"
+            ContainerDb(redis_qa, "TV QA/Review Redis", "Redis", " ")
+        }
+        node "AKS Namespace: tv-development" as aks_namespace_dev {
+            deploymentNode "Pod(s) - Web App (QA)" as web_app_pod_qa {
+                Container(web_app_qa, "Web App (QA)", "Ruby on Rails", " ")
+            }
+            deploymentNode "Pod(s) - Sidekiq (QA)" as sidekiq_pod_qa {
+                Container(sidekiq_qa, "Sidekiq (QA)", "Ruby", " ")
+            }
+            deploymentNode "Pod(s) - Web App (Review App)" as web_app_pod_review {
+                Container(web_app_review, "Web App (Review PR-xxxx)", "Ruby on Rails", "Ephemeral review app per PR")
+            }
+            deploymentNode "Pod(s) - Sidekiq (Review App)" as sidekiq_pod_review {
+                Container(sidekiq_review, "Sidekiq (Review PR-xxxx)", "Ruby", "Ephemeral review app per PR")
+            }
+        }
+    }
+}
+
+Rel(web_app_pod, pg_prod_azure, "Reads/Writes data to", "TCP/IP")
+Rel(web_app_pod, redis_prod_azure, "Reads/Writes cache, enqueues jobs to", "TCP/IP")
+Rel(sidekiq_pod, pg_prod_azure, "Reads/Writes data for jobs to", "TCP/IP")
+Rel(sidekiq_pod, redis_prod_azure, "Dequeues jobs from", "TCP/IP")
+
+' Simplified relations for other envs
+Rel(web_app_pod_staging, pg_staging_azure, "Uses", "TCP/IP")
+Rel(web_app_pod_staging, redis_staging_azure, "Uses", "TCP/IP")
+Rel(sidekiq_pod_staging, pg_staging_azure, "Uses", "TCP/IP")
+Rel(sidekiq_pod_staging, redis_staging_azure, "Uses", "TCP/IP")
+
+Rel(web_app_pod_qa, pg_qa_azure, "Uses", "TCP/IP")
+Rel(web_app_pod_qa, redis_qa_azure, "Uses", "TCP/IP")
+Rel(sidekiq_pod_qa, pg_qa_azure, "Uses", "TCP/IP")
+Rel(sidekiq_pod_qa, redis_qa_azure, "Uses", "TCP/IP")
+
+Rel(web_app_pod_review, pg_qa_azure, "Uses (shared QA DB)", "TCP/IP")
+Rel(web_app_pod_review, redis_qa_azure, "Uses (shared QA Redis)", "TCP/IP")
+Rel(sidekiq_pod_review, pg_qa_azure, "Uses (shared QA DB)", "TCP/IP")
+Rel(sidekiq_pod_review, redis_qa_azure, "Uses (shared QA Redis)", "TCP/IP")
+
+System_Ext(internet_user, "Internet User", "(Jobseeker, Publisher, Support User)")
+Rel(internet_user, web_app_pod, "Accesses service via HTTPS", "HTTPS")
+' ... similar relations for staging, QA, review apps ...
+
+@enduml

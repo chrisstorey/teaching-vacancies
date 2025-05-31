@@ -1,0 +1,37 @@
+@startuml C4_System_Context
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title System Context Diagram for Teaching Vacancies
+
+Person(jobseeker, "Jobseeker", "A teacher or other individual looking for a job in an educational institution.")
+Person(publisher, "Publisher", "A representative from a school or trust responsible for posting and managing job vacancies.")
+Person(support_user, "Support User", "DfE staff member providing user support and managing system operations.")
+Person(admin, "System Administrator", "DfE staff member responsible for system configuration and maintenance.")
+
+System_Ext(dfe_signin, "DfE Sign-in", "Manages authentication for Publishers (school and trust staff).")
+System_Ext(govuk_one_login, "GOV.UK One Login", "Manages authentication for Jobseekers.")
+System_Ext(dwp_find_a_job, "DWP Find a Job", "External job board where vacancies are also published.")
+System_Ext(ats, "Applicant Tracking Systems (ATS)", "External systems used by schools/trusts to manage recruitment, integrating via Publisher ATS API.")
+System_Ext(google_services, "Google Services", "Includes Google Drive for document virus scanning and reCAPTCHA for bot mitigation.")
+System_Ext(govuk_notify, "GOV.UK Notify", "Service used for sending email notifications (e.g., job alerts, application confirmations).")
+System_Ext(ons_arcgis, "ONS ArcGIS", "Office for National Statistics service providing geographical polygon data for location-based search.")
+
+
+System(teaching_vacancies, "Teaching Vacancies", "Allows teachers to search for jobs and schools/trusts to advertise vacancies.")
+
+Rel(jobseeker, teaching_vacancies, "Searches for jobs, manages profile, sets up alerts, applies for jobs")
+Rel(publisher, teaching_vacancies, "Posts and manages job vacancies, reviews applications (if applicable)")
+Rel(support_user, teaching_vacancies, "Monitors system, manages user feedback, assists users")
+Rel(admin, teaching_vacancies, "Configures and maintains the system")
+
+Rel(teaching_vacancies, dfe_signin, "Authenticates Publishers", "OAuth 2.0")
+Rel(teaching_vacancies, govuk_one_login, "Authenticates Jobseekers", "OpenID Connect")
+Rel(teaching_vacancies, dwp_find_a_job, "Publishes vacancies", "SFTP (XML Bulk Upload)")
+Rel(teaching_vacancies, ats, "Manages vacancies", "HTTPS/JSON (Publisher ATS API)")
+Rel(teaching_vacancies, google_services, "Uses for virus scanning and bot mitigation", "HTTPS/API")
+Rel(teaching_vacancies, govuk_notify, "Sends email notifications", "HTTPS/API")
+Rel(teaching_vacancies, ons_arcgis, "Imports geographical polygon data", "HTTPS/API")
+
+@enduml
