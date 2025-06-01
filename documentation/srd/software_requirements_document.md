@@ -461,7 +461,6 @@ This section outlines the major functional capabilities of the Teaching Vacancie
     *   **FR-SYSADM-SEC-001:** System Administrators MUST manage system secrets (API keys, database credentials) securely, likely using Azure Key Vault or similar.
     *   **FR-SYSADM-SEC-002:** System Administrators MUST be able to configure and update security-related settings, such as Content Security Policy (CSP), Cross-Origin Resource Sharing (CORS), and rate limiting (Rack::Attack).
     *   **FR-SYSADM-CACHE-001:** System Administrators MAY need to manually clear or inspect application caches (e.g., Redis) for troubleshooting purposes.
-
 ### 3.10 Reporting and Analytics
 *   **Description:** This section describes the capabilities for generating reports and analyzing data related to the Teaching Vacancies service. The primary analytics and reporting capabilities are facilitated through external systems, with the application providing some specific data exports and views.
 *   **Key Capabilities:**
@@ -1461,18 +1460,299 @@ The Teaching Vacancies service implements data retention and deletion policies t
 ## 7. Use Cases
 
 ### 7.1 UC-001: Jobseeker Searches for Vacancy
+*   **Actor:** Jobseeker (can be an anonymous user or an authenticated Jobseeker).
+*   **Scope:** Finding relevant job vacancies on the Teaching Vacancies platform.
+*   **Level:** User Goal.
+*   **Preconditions:**
+    *   The Jobseeker has access to the Teaching Vacancies website.
+    *   There are published and active (not expired or closed early) vacancies in the system.
+*   **Main Success Scenario (Flow):**
+    1.  Jobseeker navigates to the job search page (e.g., homepage or dedicated search page).
+    2.  Jobseeker enters desired search criteria. This may include one or more of:
+        *   Keywords (e.g., "Maths Teacher", "Primary School").
+        *   Location (e.g., postcode "SW1A 1AA", town "Manchester", county "Kent").
+        *   Search radius for location (if location is a point).
+    3.  Jobseeker applies optional filters. This may include one or more of:
+        *   Job Role (e.g., "teacher", "leadership").
+        *   Education Phase (e.g., "primary", "secondary").
+        *   Working Pattern (e.g., "full-time", "part-time").
+        *   Subject or Specialism.
+        *   "Suitable for NQTs/ECTs".
+        *   Contract Type.
+    4.  Jobseeker initiates the search (e.g., clicks a "Search" button).
+    5.  System validates the input (e.g., postcode format).
+    6.  System processes the search query against the database of active vacancies, matching keywords, location (geospatial query if applicable), and applied filters. (Ref: FR-JS-KEY-002, FR-JS-LOC-005, FR-JS-LOC-006, BR-SEARCH-001).
+    7.  System displays a paginated list of matching job vacancies, sorted by a default order (e.g., relevance or publication date). Each item in the list shows summary information (e.g., job title, school name, location, salary, closing date). (Ref: FR-JS-SEARCH-001, FR-JS-SEARCH-002).
+    8.  Jobseeker can navigate through pages of search results.
+    9.  Jobseeker can select a vacancy from the list to view its detailed information page. (Ref: FR-JS-SEARCH-003).
+    10. Jobseeker can modify their search criteria or filters and re-submit the search.
+    11. Jobseeker can sort the search results by different criteria (e.g., closing date, publication date). (Ref: FR-JS-SORT-001).
+    12. Jobseeker MAY choose to view search results on a map. (Ref: FR-JS-MAP-001).
+*   **Extensions (Alternative Flows):**
+    *   **2a. Invalid Location Input:**
+        1.  System detects an invalid location format (e.g., invalid postcode).
+        2.  System displays an error message prompting the Jobseeker to correct the input. Flow resumes at step 2.
+    *   **7a. No Matching Vacancies:**
+        1.  System finds no vacancies matching the criteria.
+        2.  System displays a message indicating that no results were found and may suggest broadening search criteria or creating a job alert.
+    *   **7b. Location Suggestion Used:**
+        1.  As Jobseeker types in the location field, the system provides location suggestions. (Ref: FR-JS-LOC-007)
+        2.  Jobseeker selects a suggestion, which populates the location field. Flow continues.
+*   **Postconditions:**
+    *   Jobseeker has viewed a list of vacancies matching their criteria.
+    *   Jobseeker may have navigated to view the details of one or more specific vacancies.
+    *   Jobseeker may have refined their search or decided to create a job alert (handled in UC-004).
 ### 7.2 UC-002: Publisher Posts New Vacancy
+*   **Actor:** Publisher (authenticated school/trust staff).
+*   **Scope:** Creating and publishing a new job vacancy on the Teaching Vacancies platform.
+*   **Level:** User Goal.
+*   **Preconditions:**
+    *   Publisher is authenticated via DfE Sign-in and associated with one or more active organisations on the Teaching Vacancies service. (Ref: BR-AUTH-002, BR-VAC-001).
+    *   Publisher has the necessary information to create a complete vacancy listing (job details, description, salary, application process details, etc.).
+*   **Main Success Scenario (Flow):**
+    1.  Publisher navigates to the "Create a job vacancy" section of their dashboard.
+    2.  **Step 1: Job Details:** (Ref: FR-PUB-VAC-DET-001 to FR-PUB-VAC-DET-010)
+        *   Publisher selects the organisation for the vacancy from their permitted list. (Ref: BR-VAC-002)
+        *   Publisher enters mandatory job title, selects job roles, working patterns, contract type, and education phases.
+        *   Publisher enters conditional/optional information like subjects, key stages, and NQT/ECT suitability.
+        *   Publisher proceeds to the next step.
+    3.  **Step 2: Pay and Benefits:** (Ref: FR-PUB-VAC-PAY-001 to FR-PUB-VAC-PAY-002)
+        *   Publisher enters mandatory salary information.
+        *   Publisher enters optional benefits details.
+        *   Publisher proceeds to the next step.
+    4.  **Step 3: Role Description and Responsibilities:** (Ref: FR-PUB-VAC-DESC-001 to FR-PUB-VAC-DESC-003)
+        *   Publisher enters mandatory "About the role", "What the school offers", and "What we're looking for" information.
+        *   Publisher proceeds to the next step.
+    5.  **Step 4: Application Process:** (Ref: FR-PUB-VAC-APP-001 to FR-PUB-VAC-APP-008)
+        *   Publisher selects an application method (e.g., through Teaching Vacancies, via school website, by email).
+        *   Publisher provides necessary details based on method (e.g., URL, email address).
+        *   Publisher sets a mandatory closing date (must be in the future - Ref: BR-VAC-005).
+        *   Publisher MAY set a closing time, contact details, and upload supporting documents (subject to file type/size rules and virus scan - Ref: BR-VAC-006).
+        *   Publisher proceeds to the next step.
+    6.  **Step 5: Review and Publish:** (Ref: FR-PUB-VAC-REV-001 to FR-PUB-VAC-REV-004)
+        *   System displays a summary of all entered vacancy details.
+        *   Publisher reviews the information for accuracy.
+        *   Publisher chooses to "Publish" the vacancy.
+    7.  System validates that all mandatory fields across all steps have been completed. (Ref: BR-VAC-007).
+    8.  System saves the vacancy with a 'published' status.
+    9.  System makes the vacancy visible in Jobseeker searches and available for job alerts.
+    10. System may enqueue background jobs (e.g., for indexing, DWP export preparation).
+    11. System confirms successful publication to the Publisher and redirects them (e.g., to the vacancy dashboard or the published vacancy page).
+*   **Extensions (Alternative Flows):**
+    *   **X1. Save as Draft:**
+        *   At any step in the process (steps 2-5), Publisher chooses to "Save as draft". (Ref: FR-PUB-VAC-REV-002)
+        *   System saves the current state of the vacancy with a 'draft' status.
+        *   Publisher can return later to complete and publish the draft vacancy.
+    *   **X2. Validation Error:**
+        *   During any step, if mandatory information is missing or invalid (e.g., closing date not in future, invalid URL), and Publisher attempts to proceed or publish:
+            *   System displays an error message highlighting the fields needing correction.
+            *   Flow remains on the current step until errors are resolved.
+    *   **X3. ATS-Managed Vacancy (Not applicable for manual posting):** If the Publisher's organisation uses an integrated ATS as the primary source, this manual creation flow might be disabled or behave differently, with vacancies primarily managed via the ATS API.
+*   **Postconditions:**
+    *   A new job vacancy is created and stored in the system with a 'published' status (or 'draft' if saved as draft).
+    *   If published, the vacancy is now searchable by Jobseekers.
+    *   Publisher is informed of the outcome.
 ### 7.3 UC-003: Jobseeker Applies for Vacancy
+*   **Actor:** Jobseeker (must be authenticated for in-platform applications).
+*   **Scope:** A Jobseeker submitting an application for a specific vacancy.
+*   **Level:** User Goal.
+*   **Preconditions:**
+    *   Jobseeker has found a vacancy they wish to apply for.
+    *   The vacancy is currently accepting applications (status 'published', not expired or closed early). (Ref: BR-APP-002)
+*   **Main Success Scenario (Flow - In-Platform Application):**
+    1.  Jobseeker is viewing the details page of a vacancy that uses the in-platform application method (`enable_job_applications` is true).
+    2.  Jobseeker initiates the application process (e.g., clicks "Apply for this job").
+    3.  System checks if Jobseeker is authenticated.
+        *   If not authenticated, system prompts Jobseeker to log in via GOV.UK One Login. Jobseeker logs in. (Ref: FR-JS-APP-002, BR-APP-001).
+    4.  System starts a new job application record for the Jobseeker and Vacancy, or loads an existing draft application if one exists.
+    5.  Jobseeker completes the multi-step application form. (Ref: FR-JS-APP-003, FR-JS-APP-004). This typically includes sections for:
+        *   Personal Information (may be pre-filled from Jobseeker Profile - Ref: FR-JS-PROF-009)
+        *   Education & Qualifications (may be pre-filled)
+        *   Work Experience/Employment History (may be pre-filled)
+        *   Personal Statement/Letter of Application
+        *   References
+        *   Equal Opportunities Monitoring Information
+        *   Declarations (e.g., right to work, safeguarding)
+    6.  During the process, Jobseeker MAY upload supporting documents (e.g., CV, cover letter). (Ref: FR-JS-APP-005, BR-APP-004: file type/size rules, virus scan).
+    7.  Jobseeker can save their application as a draft at any point and return to complete it later.
+    8.  Once all mandatory sections are complete, Jobseeker navigates to a review page displaying all their entered information and uploaded documents. (Ref: FR-JS-APP-006).
+    9.  Jobseeker reviews their application and confirms submission.
+    10. System validates the application for completeness.
+    11. System saves the application with a 'submitted' status, records the submission timestamp, and makes it available to the Publisher.
+    12. System displays a confirmation message to the Jobseeker. (Ref: FR-JS-APP-007).
+    13. System MAY send an email notification to the Jobseeker confirming their application submission.
+    14. System MAY send an email notification to the Publisher about the new application. (Ref: FR-PUB-NOTIF-001).
+*   **Main Success Scenario (Flow - External Application):**
+    1.  Jobseeker is viewing the details page of a vacancy that uses an external application method (e.g., school's own website/ATS, email). (Ref: FR-JS-APP-001).
+    2.  System clearly displays the link to the external application site or the email address for applications.
+    3.  Jobseeker clicks the link or notes the email address.
+    4.  If a link, Jobseeker is redirected in their browser to the external application site. The Teaching Vacancies service does not track the application beyond this point.
+    5.  If an email address, Jobseeker uses their email client to send their application. The Teaching Vacancies service does not track the application.
+*   **Extensions (Alternative Flows):**
+    *   **X1. Application Deadline Passed / Vacancy No Longer Active:**
+        *   If the Jobseeker attempts to apply after the deadline or if the vacancy is no longer active, the system prevents application submission and informs the Jobseeker.
+    *   **X2. Jobseeker Withdraws Application (In-Platform):**
+        *   Jobseeker views their submitted application.
+        *   Jobseeker chooses to withdraw the application (if allowed by defined rules - Ref: FR-JS-APP-009, BR-APP-005).
+        *   System updates the application status to 'withdrawn'.
+        *   System MAY notify the Publisher.
+*   **Postconditions:**
+    *   **For In-Platform Application:**
+        *   A job application record is created with 'submitted' status.
+        *   The Jobseeker is notified of successful submission.
+        *   The Publisher can view the submitted application.
+    *   **For External Application:**
+        *   The Jobseeker has been directed to the external application method. No application data is stored within the Teaching Vacancies service for this application.
 ### 7.4 UC-004: Jobseeker Creates Job Alert
-  - [7.5 UC-005: Publisher Manages Organisation Profile](#75-uc-005-publisher-manages-organisation-profile)
-  - [7.6 UC-006: Jobseeker Manages Personal Profile](#76-uc-006-jobseeker-manages-personal-profile)
+*   **Actor:** Jobseeker (can be an anonymous user initially, but requires email for alert delivery; authenticated Jobseekers can manage alerts from their dashboard).
+*   **Scope:** Setting up a subscription to receive email notifications about new vacancies matching specified criteria.
+*   **Level:** User Goal.
+*   **Preconditions:**
+    *   Jobseeker has access to the Teaching Vacancies website.
+    *   Jobseeker has performed a search or knows the criteria for which they want to receive alerts.
+*   **Main Success Scenario (Flow):**
+    1.  Jobseeker is on a job search results page OR on a dedicated "Create Job Alert" page OR on their dashboard (if authenticated).
+    2.  Jobseeker initiates the creation of a job alert (e.g., clicks a "Create alert" button based on current search filters, or fills a form with alert criteria). (Ref: FR-JS-ALERT-001).
+    3.  If not already defined by a prior search, Jobseeker specifies the criteria for the job alert. This typically includes:
+        *   Keywords.
+        *   Location and radius.
+        *   Other filters (Job Role, Phase, Working Pattern, etc.).
+    4.  System prompts the Jobseeker for their email address to receive the alerts.
+        *   If the Jobseeker is authenticated, their registered email address may be pre-filled.
+    5.  Jobseeker MAY be asked to confirm their email address (e.g., via a confirmation link sent to the provided email, especially if not authenticated, to prevent abuse - double opt-in).
+    6.  Jobseeker confirms the creation of the job alert.
+    7.  System saves the subscription with the specified criteria and the Jobseeker's email address. (The `subscriptions` table stores `email` and `search_criteria` as JSON).
+    8.  System confirms to the Jobseeker that the job alert has been successfully created.
+    9.  (Later) When new vacancies are published that match the saved alert criteria, the system will send an email notification to the Jobseeker's email address (handled by UC-009). (Ref: FR-JS-ALERT-003).
+*   **Extensions (Alternative Flows):**
+    *   **4a. Invalid Email Format:**
+        1.  System detects an invalid email format.
+        2.  System displays an error message prompting the Jobseeker to correct the input. Flow resumes at step 4.
+    *   **7a. Jobseeker Already Subscribed with Identical Criteria:**
+        1.  System detects an existing active alert with the exact same criteria for the given email address.
+        2.  System informs the Jobseeker they are already subscribed to this alert. Flow may end or allow modification.
+    *   **Managing Existing Alerts (Authenticated Jobseeker):** (Ref: FR-JS-ALERT-002)
+        1.  Authenticated Jobseeker navigates to their dashboard section for managing job alerts.
+        2.  System displays a list of their active job alerts.
+        3.  Jobseeker can choose to:
+            *   View the criteria of an alert.
+            *   Edit the criteria of an alert (flow may return to step 3 for criteria definition).
+            *   Pause/Resume an alert.
+            *   Delete an alert.
+        4.  System updates the subscription record accordingly.
+*   **Postconditions:**
+    *   A new job alert subscription record is created in the system and associated with the Jobseeker's email address.
+    *   The Jobseeker will receive email notifications for new vacancies matching the alert criteria according to the defined frequency (e.g., daily).
+    *   If authenticated, the Jobseeker can see and manage this alert from their dashboard.
+### 7.5 UC-005: Publisher Manages Organisation Profile
+*   **Actor:** Publisher (authenticated school/trust staff with appropriate permissions).
+*   **Scope:** Updating and managing editable aspects of their organisation's profile information displayed on Teaching Vacancies.
+*   **Level:** User Goal.
+*   **Preconditions:**
+    *   Publisher is authenticated via DfE Sign-in and associated with the organisation whose profile they intend to manage. (Ref: BR-ORG-002).
+    *   The organisation exists in the Teaching Vacancies system (likely synced from GIAS).
+*   **Main Success Scenario (Flow):**
+    1.  Publisher navigates to the organisation management section of their dashboard.
+    2.  System displays the current profile information for the selected organisation. Core data sourced from GIAS (e.g., name, address, URN) is typically displayed as read-only. (Ref: BR-ORG-001, BR-ORG-003).
+    3.  Publisher chooses to edit an editable section of the profile (e.g., "About our school/organisation" description, organisation logo, website URL override, contact email for enquiries). (Ref: FR-PUB-ORG-003).
+    4.  Publisher makes the desired changes in the provided form fields or upload interfaces.
+    5.  Publisher saves the changes.
+    6.  System validates the input (e.g., URL format, image file type/size).
+    7.  System updates the organisation's record in the database with the new information.
+    8.  System confirms that the changes have been saved successfully.
+    9.  The updated information is now reflected on new vacancy listings and potentially on any dedicated organisation pages.
+*   **Extensions (Alternative Flows):**
+    *   **Managing Users (If Permitted):** (Ref: FR-PUB-ORG-005, BR-ORG-004)
+        1.  Publisher (with appropriate permissions) navigates to a user management area for their organisation.
+        2.  Publisher can view a list of other publishers associated with their organisation.
+        3.  Publisher MAY be able to invite new users (triggering an invitation process) or remove existing users from their organisation's context within Teaching Vacancies. (Actual user provisioning/deprovisioning is handled by DfE Sign-in).
+    *   **6a. Validation Error:**
+        1.  System detects an invalid input (e.g., invalid URL, unsupported image file).
+        2.  System displays an error message prompting the Publisher to correct the input. Flow remains on the editing step.
+*   **Postconditions:**
+    *   The organisation's profile information on Teaching Vacancies is updated with the changes made by the Publisher for the editable fields.
+    *   Core GIAS-sourced data remains unchanged by this process.
+    *   If users were managed, their associations or invitations are updated.
+### 7.6 UC-006: Jobseeker Manages Personal Profile
+*   **Actor:** Authenticated Jobseeker.
+*   **Scope:** Creating, viewing, and updating their personal and professional information stored within their Teaching Vacancies profile. This profile data can be used to pre-fill job applications.
+*   **Level:** User Goal.
+*   **Preconditions:**
+    *   Jobseeker is authenticated via GOV.UK One Login and has an existing Jobseeker account on Teaching Vacancies. (Ref: FR-JS-PROF-001).
+*   **Main Success Scenario (Flow):**
+    1.  Jobseeker navigates to their profile/account management section from their dashboard.
+    2.  System displays the Jobseeker's profile, potentially divided into sections (e.g., Personal Details, Qualifications, Work Experience, Job Preferences, Supporting Documents, Account Settings).
+    3.  Jobseeker selects a section to view or edit (e.g., "Work Experience").
+    4.  **If adding new information (e.g., a new qualification or employment):**
+        *   Jobseeker selects an "Add new..." option.
+        *   System presents a form for the relevant information (e.g., for a qualification: name, subject, institution, grade, year obtained - Ref: FR-JS-PROF-003).
+        *   Jobseeker fills in the details and saves.
+        *   System validates the input and, if valid, adds the new record to the Jobseeker's profile.
+        *   System confirms the addition.
+    5.  **If editing existing information:**
+        *   Jobseeker selects an "Edit" option next to an existing item.
+        *   System pre-fills a form with the existing information.
+        *   Jobseeker modifies the details and saves.
+        *   System validates the input and, if valid, updates the record in the Jobseeker's profile.
+        *   System confirms the update.
+    6.  **If managing supporting documents:** (Ref: FR-JS-PROF-006)
+        *   Jobseeker navigates to the "Supporting Documents" section.
+        *   Jobseeker can upload new documents (e.g., CV, cover letter), subject to file type/size rules and virus scan (Ref: BR-PROF-001).
+        *   Jobseeker can view a list of their uploaded documents.
+        *   Jobseeker can delete existing documents.
+    7.  **If managing account settings:** (Ref: FR-JS-PROF-007)
+        *   Jobseeker navigates to "Account Settings".
+        *   Jobseeker can update notification preferences.
+        *   Jobseeker MAY be able to update their contact email address (if different from their GOV.UK One Login primary email and system allows).
+    8.  **If requesting account deletion:** (Ref: FR-JS-PROF-008)
+        *   Jobseeker navigates to an account deletion option.
+        *   System provides information about the consequences of account deletion.
+        *   Jobseeker confirms their request for account deletion.
+        *   System processes the account deletion request (details subject to data retention policies and GDPR compliance - see Section 6.3).
+*   **Extensions (Alternative Flows):**
+    *   **4c/5c. Validation Error:**
+        1.  During an add or edit operation, if mandatory information is missing or invalid, the system displays an error message highlighting the fields needing correction.
+        2.  Flow remains on the current form until errors are resolved.
+    *   **6c. Document Upload Failure:**
+        1.  If a document upload fails (e.g., unsupported file type, exceeds size limit, virus detected), the system informs the Jobseeker of the reason.
+*   **Postconditions:**
+    *   The Jobseeker's profile information is created or updated in the system.
+    *   This updated information MAY be used to pre-fill future job applications made through the platform.
+    *   If account deletion was requested, the account and associated data are scheduled for deletion or anonymization according to system policies.
   - [7.7 UC-007: Support User Manages User Feedback](#77-uc-007-support-user-manages-user-feedback)
   - [7.8 UC-008: Support User Manages Publisher ATS API Client](#78-uc-008-support-user-manages-publisher-ats-api-client)
   - [7.9 UC-009: System Sends Job Alert Email to Jobseeker](#79-uc-009-system-sends-job-alert-email-to-jobseeker)
   - [7.10 UC-010: System Exports Vacancies to DWP Find a Job](#710-uc-010-system-exports-vacancies-to-dwp-find-a-job)
-### 7.5 UC-005: Publisher Manages Organisation Profile
 ### 7.6 UC-006: Jobseeker Manages Personal Profile
 ### 7.7 UC-007: Support User Manages User Feedback
+*   **Actor:** Support User (DfE Staff with appropriate permissions).
+*   **Scope:** Viewing, filtering, and potentially actioning user-submitted feedback regarding the Teaching Vacancies service.
+*   **Level:** User Goal.
+*   **Preconditions:**
+    *   Support User is authenticated with the necessary privileges to access the support interface and feedback management section. (Ref: FR-SUP-AUTH-001, FR-SUP-AUTH-002).
+    *   User feedback has been submitted to the system.
+*   **Main Success Scenario (Flow):**
+    1.  Support User navigates to the feedback management section within the support interface.
+    2.  System displays a list of user-submitted feedback items. (Ref: FR-SUP-FDBK-001). Each item shows summary information (e.g., date, type, user identifier if available, summary - Ref: FR-SUP-FDBK-004).
+    3.  Support User applies filters to narrow down the feedback list, for example, by:
+        *   Feedback type (e.g., 'general', 'job_alert_unsubscribe', 'vacancy_feedback'). (Ref: FR-SUP-FDBK-002)
+        *   User type (e.g., 'Jobseeker', 'Publisher', 'Anonymous'). (Ref: FR-SUP-FDBK-003)
+        *   Date range.
+        *   Status (if applicable, e.g., 'Open', 'Resolved').
+    4.  System updates the feedback list based on the applied filters.
+    5.  Support User selects a specific feedback item to view its full details. (Ref: FR-SUP-FDBK-005). This includes the full comment, any associated data (like vacancy ID or user email if provided and permissioned), and metadata.
+    6.  Support User reviews the feedback content.
+    7.  Support User MAY take external actions based on the feedback (e.g., contacting a user, escalating an issue to the technical team, noting a suggestion for product improvement).
+    8.  Support User MAY update the status of the feedback item within the system (e.g., mark as 'Investigating', 'Resolved', 'Archived'). (Ref: FR-SUP-FDBK-006).
+    9.  Support User MAY export feedback data for further analysis or reporting (e.g., to CSV). (Ref: FR-SUP-FDBK-007, BR-SUP-001).
+*   **Extensions (Alternative Flows):**
+    *   **5a. No Feedback Matching Filters:**
+        1.  If applied filters result in no matching feedback items, the system displays a message indicating this.
+*   **Postconditions:**
+    *   Support User has gained insights from user feedback.
+    *   Status of feedback items MAY be updated within the system.
+    *   Feedback data MAY be exported.
+    *   Appropriate actions based on feedback content MAY have been initiated outside the system.
 ### 7.8 UC-008: Support User Manages Publisher ATS API Client
 ### 7.9 UC-009: System Sends Job Alert Email to Jobseeker
 ### 7.10 UC-010: System Exports Vacancies to DWP Find a Job
