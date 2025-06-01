@@ -1719,10 +1719,7 @@ The Teaching Vacancies service implements data retention and deletion policies t
     *   The Jobseeker's profile information is created or updated in the system.
     *   This updated information MAY be used to pre-fill future job applications made through the platform.
     *   If account deletion was requested, the account and associated data are scheduled for deletion or anonymization according to system policies.
-  - [7.7 UC-007: Support User Manages User Feedback](#77-uc-007-support-user-manages-user-feedback)
-  - [7.8 UC-008: Support User Manages Publisher ATS API Client](#78-uc-008-support-user-manages-publisher-ats-api-client)
-  - [7.9 UC-009: System Sends Job Alert Email to Jobseeker](#79-uc-009-system-sends-job-alert-email-to-jobseeker)
-  - [7.10 UC-010: System Exports Vacancies to DWP Find a Job](#710-uc-010-system-exports-vacancies-to-dwp-find-a-job)
+
 ### 7.6 UC-006: Jobseeker Manages Personal Profile
 ### 7.7 UC-007: Support User Manages User Feedback
 *   **Actor:** Support User (DfE Staff with appropriate permissions).
