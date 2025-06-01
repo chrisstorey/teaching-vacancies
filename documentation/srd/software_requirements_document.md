@@ -443,21 +443,51 @@ This section outlines the major functional capabilities of the Teaching Vacancie
     *   **FR-SUP-USER-002:** Support Users MAY have the ability to assist with common account issues, such as triggering a password reset email for fallback authentication methods or helping users understand DfE Sign-in/GOV.UK One Login processes. Business Rule: Direct password changes by Support Users are prohibited.
 
 ### 3.9 System Administration Functions
-*   **Description:** Enables technical staff to maintain and operate the system. These are typically not user-facing application features but backend operational capabilities.
-*   **Key Capabilities (High-Level):** (Admin-focused, to be detailed in a subsequent step)
-    *   Deployment of new application versions...
-    *   ...
+*   **Description:** Enables technical staff (System Administrators, SREs, or senior developers with operational responsibilities) to maintain, operate, and monitor the system at a technical level. These functions are generally not exposed through a user-facing web interface but are performed via backend tools, scripts, and direct access to the infrastructure.
+*   **Key Capabilities:**
+    *   **FR-SYSADM-DEPLOY-001:** System Administrators MUST be able to deploy new versions of the application to all environments (development, staging, production). Business Rule: Deployments are managed via GitHub Actions workflows, which automate the build, test, and deployment process to Azure Kubernetes Service (AKS).
+    *   **FR-SYSADM-INFRA-001:** System Administrators MUST be able to manage and configure the underlying cloud infrastructure (Azure AKS, PostgreSQL, Redis, Azure Blob Storage for ActiveStorage). Business Rule: Infrastructure is managed as code using Terraform.
+    *   **FR-SYSADM-MONITOR-001:** System Administrators MUST be able to monitor application performance, errors, and system health. Business Rule: Monitoring is achieved through integrated tools like Sentry (for error tracking), Azure Monitor, and potentially other logging/metrics platforms fed by SemanticLogger.
+    *   **FR-SYSADM-LOG-001:** System Administrators MUST have access to aggregated application and system logs for troubleshooting and auditing.
+    *   **FR-SYSADM-DB-001:** System Administrators MUST be able to perform database administration tasks, including backups, restores (as per disaster recovery plans), schema migrations, and performance tuning. Business Rule: Database backups are automated. Migrations are handled via Rails' migration mechanism.
+    *   **FR-SYSADM-DATA-001:** System Administrators MUST be able to run data integrity checks and perform data cleansing operations. Example: The `audit:email_addresses` Rake task allows for listing and deleting records with invalid email addresses.
+    *   **FR-SYSADM-TASK-001:** System Administrators MUST be able to execute ad-hoc or scheduled maintenance tasks using Rake. Examples: `dsi:update_users` (synchronizing user data from DfE Sign-in), `gias:import_schools` (updating organisation data from GIAS), `google:remove_expired_vacancies_google_index`.
+    *   **FR-SYSADM-CONSOLE-001:** System Administrators (with proper authorization and safeguards) MAY use the Rails console for direct interaction with application models and services for diagnostics or urgent interventions.
+    *   **FR-SYSADM-SEC-001:** System Administrators MUST manage system secrets (API keys, database credentials) securely, likely using Azure Key Vault or similar.
+    *   **FR-SYSADM-SEC-002:** System Administrators MUST be able to configure and update security-related settings, such as Content Security Policy (CSP), Cross-Origin Resource Sharing (CORS), and rate limiting (Rack::Attack).
+    *   **FR-SYSADM-CACHE-001:** System Administrators MAY need to manually clear or inspect application caches (e.g., Redis) for troubleshooting purposes.
 
-### 3.10 Reporting and Analytics (Placeholder)
-*   **Description:** While detailed analytics might reside in external systems (e.g., BigQuery), the application itself might provide some basic reporting for publishers or internal DfE use.
-*   **Key Capabilities (High-Level):**
-    *   For Publishers: Basic view counts or application numbers for their vacancies.
-    *   For DfE/Support: Overall service usage statistics (e.g., number of vacancies, jobseekers, applications over time).
-    *(This area requires further definition based on actual system capabilities vs. what's handled by external analytics platforms like Google BigQuery/Looker Studio mentioned in arc42).*
+### 3.10 Reporting and Analytics
+*   **Description:** This section describes the capabilities for generating reports and analyzing data related to the Teaching Vacancies service. The primary analytics and reporting capabilities are facilitated through external systems, with the application providing some specific data exports and views.
+*   **Key Capabilities:**
+    *   **FR-REP-EXT-001 (External Analytics Platform):** The system MUST send relevant data points and events to an external analytics platform (DfE Analytics, utilizing Google BigQuery) for comprehensive analysis and reporting. Business Rule: This is evidenced by ADR 0002 (Replace Google Sheets with BigQuery) and the `DfE::Analytics` integration.
+    *   **FR-REP-EXT-002 (User Behavior Tracking):** The system MUST integrate with Google Analytics and Google Tag Manager for tracking user behavior on the website (e.g., page views, search queries, interaction with UI elements).
+    *   **FR-REP-SUP-001 (Support User - Equal Opportunities Report):** Authenticated Support Users MUST be able to download aggregated Equal Opportunities Reports. Business Rule: These reports are generated based on anonymized data from in-platform job applications for specific vacancies (see `EqualOpportunitiesReport` model).
+    *   **FR-REP-SUP-002 (Support User - Jobseeker Profile Access):** Authenticated Support Users MUST be able to view and list Jobseeker Profiles for support and audit purposes (as seen in `SupportUsers::ServiceData::JobseekerProfilesController`). This is primarily a data lookup feature rather than aggregated reporting.
+    *   **FR-REP-SUP-003 (Support User - Dashboard Metrics):** The support user interface SHOULD display high-level operational metrics on its dashboard (e.g., number of active vacancies, new users, job alerts). Business Rule: The exact metrics are defined by the needs of the support team.
+    *   **FR-REP-PUB-001 (Publisher - Basic Vacancy Stats):** Publishers SHOULD see basic statistics for their published vacancies directly on their dashboard (e.g., view counts, number of applications if using the in-platform application feature). These are typically simple counts rather than in-depth analytics.
+    *   **FR-REP-DATA-001 (Data for External Reporting):** The application's database (PostgreSQL) serves as the source of truth. Data from this database is extracted, transformed, and loaded (ETL) into Google BigQuery for detailed analysis and visualization using tools like Looker Studio.
 
 ## 4. External Interface Requirements
 
 ### 4.1 User Interfaces
+The Teaching Vacancies service provides distinct web-based user interfaces tailored to its main user classes. All user interfaces MUST adhere to the GOV.UK Design System for consistency, usability, and accessibility.
+
+*   **UI-001: Jobseeker Interface:**
+    *   **Description:** Public-facing interface allowing users to search for vacancies, view vacancy details, manage their profiles (including saved jobs and job alerts), and apply for jobs (either via the in-platform process or by redirection).
+    *   **Key Characteristics:** WCAG 2.1 AA compliant, responsive design for desktop and mobile devices, intuitive search and navigation. Authentication via GOV.UK One Login.
+
+*   **UI-002: Publisher Interface:**
+    *   **Description:** Interface for school and trust staff (Publishers) to create and manage job vacancies, view applications submitted through the platform, and manage their organisation's profile details.
+    *   **Key Characteristics:** WCAG 2.1 AA compliant, designed for administrative tasks, clear workflows for vacancy creation and management. Authentication via DfE Sign-in.
+
+*   **UI-003: Support User Interface:**
+    *   **Description:** Dedicated interface for DfE support staff to manage user feedback, assist users, view service data, and manage Publisher ATS API clients.
+    *   **Key Characteristics:** Role-based access control, functional design for support tasks, not typically public-facing. Authentication via DfE internal mechanisms (likely DfE Sign-in with elevated privileges).
+
+*   **UI-004: System Administration (Indirect Interface):**
+    *   **Description:** System Administrators primarily interact with the system via backend tools, command-line interfaces (e.g., `kubectl` for AKS, Rails console), Rake tasks, and infrastructure management platforms (e.g., Azure Portal, Terraform). There is no dedicated web UI for System Administration in the traditional sense.
+
 ### 4.2 Hardware Interfaces (Not Applicable)
 ### 4.3 Software Interfaces
     - [4.3.1 DfE Sign-in](#431-dfe-sign-in)
@@ -467,20 +497,178 @@ This section outlines the major functional capabilities of the Teaching Vacancie
     - [4.3.5 Google Services (reCAPTCHA, Drive)](#435-google-services-recaptcha-drive)
     - [4.3.6 GOV.UK Notify](#436-govuk-notify)
     - [4.3.7 ONS ArcGIS Service](#437-ons-arcgis-service)
+
+#### 4.3.1 DfE Sign-in
+*   **Description:** Used for authenticating Publisher users. It provides identity verification and passes user information (including roles and associated organisations) to the Teaching Vacancies service.
+*   **Interaction Protocol:** OAuth 2.0 for authentication.
+#### 4.3.2 GOV.UK One Login
+*   **Description:** Used for authenticating Jobseeker users. It provides identity verification for jobseekers.
+*   **Interaction Protocol:** OpenID Connect (OIDC) for authentication.
+#### 4.3.3 DWP Find a Job Service
+*   **Description:** Vacancy data is exported to the Department for Work and Pensions' "Find a Job" service to reach a wider audience of jobseekers.
+*   **Interaction Protocol:** Daily XML bulk uploads via SFTP.
+#### 4.3.4 Publisher ATS API
+*   **Description:** An API provided by Teaching Vacancies to allow third-party Applicant Tracking Systems (ATS) used by schools/trusts to programmatically post and manage vacancies.
+*   **Interaction Protocol:** HTTPS/JSON. The API allows Applicant Tracking Systems to post and manage vacancies.
+#### 4.3.5 Google Services (reCAPTCHA, Drive)
+*   **Description:** Integration with Google reCAPTCHA v3 for bot mitigation on public forms and Google Drive for temporary storage and virus scanning of uploaded documents.
+*   **Interaction Protocol (reCAPTCHA):** JavaScript integration on the client-side and server-side API calls for verification.
+*   **Interaction Protocol (Drive):** HTTPS/API.
+#### 4.3.6 GOV.UK Notify
+*   **Description:** Used for sending all system-generated emails to users (e.g., job alerts, application confirmations, password resets for fallback authentication).
+*   **Interaction Protocol:** HTTPS/API for sending emails (and potentially SMS in the future).
+#### 4.3.7 ONS ArcGIS Service
+*   **Description:** Used to import geographical polygon data (e.g., for counties, cities) from the Office for National Statistics, which supports location-based searches.
+*   **Interaction Protocol:** HTTPS/API for data import (typically a scheduled background job).
+
 ### 4.4 Communications Interfaces
+This section details the communication protocols used by the Teaching Vacancies service for its external software interfaces and general web access.
+
+*   **CI-001: HTTPS (HTTP Secure):**
+    *   **Description:** All web-based user interfaces (Jobseeker, Publisher, Support) and API interactions (Publisher ATS API, Google Services, GOV.UK Notify, ONS ArcGIS Service client-side components) MUST be served over HTTPS to ensure data encryption in transit.
+    *   **Standard:** TLS 1.2 or higher.
+
+*   **CI-002: OAuth 2.0 / OpenID Connect (OIDC):**
+    *   **Description:** Used for secure authentication and authorization with external Identity Providers.
+    *   **Usage:**
+        *   DfE Sign-in: OAuth 2.0.
+        *   GOV.UK One Login: OpenID Connect (which is built on OAuth 2.0).
+
+*   **CI-003: SFTP (SSH File Transfer Protocol):**
+    *   **Description:** Used for secure batch file transfers.
+    *   **Usage:** Exporting vacancy data to the DWP Find a Job service (daily XML bulk upload).
+
+*   **CI-004: SMTP (Simple Mail Transfer Protocol) - Indirectly:**
+    *   **Description:** While the application itself does not directly use SMTP for sending emails, it integrates with GOV.UK Notify, which handles the complexities of email delivery via SMTP.
+    *   **Usage:** All system-generated emails (job alerts, application confirmations, etc.) are sent via the GOV.UK Notify API.
 
 ## 5. Non-Functional Requirements
 
 ### 5.1 Performance Requirements
+The system MUST provide a responsive experience to users, especially for critical functions like job search and vacancy application.
+
+*   **NFR-PERF-001 (Page Load Time):** 95% of informational pages and vacancy listings SHOULD load within 3 seconds under typical load conditions. Server-side processing time for these pages SHOULD average under 500ms.
+*   **NFR-PERF-002 (Search Response Time):** Job search queries (including keyword, location, and filter application) SHOULD return results within 2 seconds for 95% of typical searches.
+*   **NFR-PERF-003 (Concurrent Users):** The system MUST support at least 1000 concurrent users performing typical read-heavy operations (searching, browsing vacancies) without significant performance degradation. The system must also support peaks of [Specify target based on known peaks, e.g., 200] concurrent users performing write operations (e.g., publishers creating vacancies, jobseekers submitting applications).
+*   **NFR-PERF-004 (Background Job Processing):** Critical background jobs (e.g., daily job alerts, DWP Find a Job export) MUST complete within their scheduled windows. Job alert processing SHOULD be efficient enough to handle a large volume of subscriptions and new vacancies daily.
+*   **NFR-PERF-005 (Resource Utilization):** CPU and memory utilization on application servers and database servers SHOULD remain within acceptable thresholds (e.g., below 75% average) during peak load to ensure headroom and stability.
+*   **NFR-PERF-006 (API Response Times):** The Publisher ATS API endpoints MUST respond within an average of 1 second for typical requests under expected load.
+
 ### 5.2 Scalability Requirements
+The system MUST be able to scale to accommodate growth in user numbers, data volume, and traffic.
+
+*   **NFR-SCALE-001 (Horizontal Scalability):** The web application and background job processing components (Sidekiq workers) running on Azure Kubernetes Service (AKS) MUST be horizontally scalable. This means the system should be able to handle increased load by adding more instances (pods) of these components.
+*   **NFR-SCALE-002 (Database Scalability):** The Azure PostgreSQL database MUST be configured to allow for scaling up (increasing resources of the existing instance) or scaling out (e.g., read replicas, if appropriate for future needs) to handle increased data storage and query load.
+*   **NFR-SCALE-003 (Cache Scalability):** The Azure Cache for Redis MUST be scalable to handle increased caching demands and session storage.
+*   **NFR-SCALE-004 (Stateless Application Tier):** The web application tier SHOULD be designed to be stateless where possible, allowing requests to be distributed across multiple instances without loss of session context (session state managed by Redis).
+*   **NFR-SCALE-005 (Geographic Data Handling):** The system's use of PostGIS and spatial indexing MUST be efficient to handle a growing number of vacancies and complex location-based queries.
+*   **NFR-SCALE-006 (Storage Scalability):** Azure Blob Storage (for ActiveStorage) MUST provide sufficient scalability for storing uploaded documents.
+
 ### 5.3 Availability and Reliability Requirements
+The service MUST be highly available and reliable for users.
+
+*   **NFR-AVAIL-001 (Uptime Target):** The service MUST achieve an uptime of at least 99.9%, excluding planned maintenance.
+*   **NFR-AVAIL-002 (Planned Maintenance):** Planned maintenance windows MUST be scheduled outside of peak usage hours (typically UK business hours and early evenings) and communicated to users in advance where possible.
+*   **NFR-AVAIL-003 (External Dependencies):** While the service depends on external systems (DfE Sign-in, GOV.UK One Login, GOV.UK Notify, etc.), it SHOULD implement appropriate error handling, timeouts, and fallback mechanisms (where feasible, e.g., authentication fallback) to minimize impact from external service disruptions.
+*   **NFR-AVAIL-004 (Disaster Recovery - RTO/RPO):**
+    *   **Recovery Time Objective (RTO):** In the event of a major incident, the service SHOULD be restorable within 4 hours.
+    *   **Recovery Point Objective (RPO):** Data loss in the event of a major incident SHOULD NOT exceed 1 hour of data.
+    *   *(Note: Specific RTO/RPO values should be confirmed against DfE operational targets and policies.)*
+*   **NFR-RELY-001 (Data Integrity):** The system MUST ensure data integrity through database constraints, validations, and transactional operations to prevent data corruption.
+*   **NFR-RELY-002 (Background Job Reliability):** Background jobs (e.g., sending job alerts, DWP export) MUST be reliable, with robust error handling, retry mechanisms (e.g., Sidekiq's built-in retries), and monitoring to detect and address failures promptly.
+*   **NFR-RELY-003 (Graceful Degradation):** If non-critical components or external services are unavailable, the system SHOULD degrade gracefully, clearly indicating any loss of functionality to the user without impacting core service availability.
+
 ### 5.4 Security Requirements
+The system MUST protect user data and ensure the integrity and confidentiality of the service.
+
+*   **NFR-SEC-001 (Authentication):**
+    *   Publishers MUST be authenticated via DfE Sign-in (OAuth 2.0).
+    *   Jobseekers MUST be authenticated via GOV.UK One Login (OIDC).
+    *   Support Users MUST be authenticated via DfE internal mechanisms (likely DfE Sign-in with appropriate roles).
+    *   Secure session management MUST be implemented, including session timeouts and protection against session hijacking.
+*   **NFR-SEC-002 (Authorization):** Robust authorization mechanisms MUST be in place to ensure users can only access data and functionality appropriate to their roles and permissions.
+*   **NFR-SEC-003 (Data Encryption):**
+    *   All PII and sensitive data MUST be encrypted in transit using HTTPS (TLS 1.2+).
+    *   Sensitive data stored in the database (e.g., certain fields in `job_applications`, `jobseekers`, `publishers` tables) MUST be encrypted at rest using Rails' encryption mechanisms or database-level encryption.
+*   **NFR-SEC-004 (OWASP Top 10):** The system MUST be protected against common web application vulnerabilities, including those listed in the OWASP Top 10 (e.g., SQL Injection, XSS, CSRF). Rails built-in protections (e.g., CSRF tokens, parameter sanitization) MUST be utilized and correctly configured.
+*   **NFR-SEC-005 (Input Validation):** All user-supplied input MUST be validated on both client-side (for usability) and server-side (for security).
+*   **NFR-SEC-006 (Secrets Management):** Application secrets (API keys, database credentials, etc.) MUST be managed securely using Azure Key Vault and not hardcoded in the application or version control.
+*   **NFR-SEC-007 (Dependency Management):** Dependencies (gems, libraries) MUST be regularly monitored for vulnerabilities (e.g., using Dependabot), and patched or updated promptly.
+*   **NFR-SEC-008 (Virus Scanning):** All user-uploaded files MUST be scanned for viruses before being made accessible.
+*   **NFR-SEC-009 (Bot Mitigation):** Publicly accessible forms (e.g., feedback, subscriptions) MUST be protected against spam and abuse using tools like Google reCAPTCHA.
+*   **NFR-SEC-010 (Security Audits):** Regular security audits and penetration tests MUST be conducted (e.g., annually or after major changes).
+*   **NFR-SEC-011 (Logging and Monitoring):** Security-relevant events (e.g., failed login attempts, authorization failures, potential attacks) MUST be logged and monitored to detect and respond to security incidents.
+*   **NFR-SEC-012 (Content Security Policy - CSP):** A strict CSP MUST be implemented to mitigate XSS and other content injection attacks.
+*   **NFR-SEC-013 (Rate Limiting):** Rate limiting (e.g., using Rack::Attack) MUST be implemented to protect against denial-of-service attacks and brute-force attempts.
+*   **NFR-SEC-014 (Compliance):** The system MUST comply with DfE security policies and relevant UK government security standards.
+
 ### 5.5 Maintainability Requirements
+The system MUST be designed and built in a way that facilitates ongoing maintenance, updates, and future development.
+
+*   **NFR-MAINT-001 (Code Quality):** The codebase MUST adhere to defined coding standards (e.g., Ruby style guides enforced by RuboCop). Code SHOULD be clear, concise, and well-commented where necessary.
+*   **NFR-MAINT-002 (Modularity):** The application SHOULD exhibit good modularity, with clear separation of concerns (e.g., using service objects for complex business logic, ViewComponents for UI elements).
+*   **NFR-MAINT-003 (Testability):** The system MUST have comprehensive automated test coverage, including unit tests (RSpec models, services), integration tests (RSpec requests), and system/feature tests (RSpec system tests). High test coverage ensures changes can be made with confidence.
+*   **NFR-MAINT-004 (Documentation):**
+    *   Architectural documentation (like this SRD and ADRs) MUST be kept up-to-date.
+    *   Code SHOULD be self-documenting where possible, with additional comments for complex logic.
+    *   Onboarding documentation (e.g., development setup using Devcontainers) MUST be maintained.
+*   **NFR-MAINT-005 (CI/CD):** Continuous Integration and Continuous Deployment (CI/CD) pipelines (GitHub Actions) MUST be robust and efficient, automating testing and deployment processes.
+*   **NFR-MAINT-006 (Configuration Management):** Application configuration and infrastructure SHOULD be managed as code (e.g., Terraform for infrastructure, Rails initializers for application config).
+*   **NFR-MAINT-007 (Dependency Management):** The number of dependencies SHOULD be managed, and dependencies SHOULD be kept reasonably up-to-date to avoid technical debt and security risks.
+*   **NFR-MAINT-008 (Debugging and Troubleshooting):** The system MUST provide adequate logging (SemanticLogger) and monitoring capabilities (Sentry, Skylight) to facilitate effective debugging and troubleshooting.
+
 ### 5.6 Usability Requirements
+The system MUST be intuitive and easy to use for all its target user classes.
+
+*   **NFR-USAB-001 (GOV.UK Design System):** All user interfaces MUST adhere to the principles, components, and patterns of the GOV.UK Design System.
+*   **NFR-USAB-002 (Task Completion):** Users SHOULD be able to complete key tasks (e.g., jobseeker searching for and applying for a job, publisher posting a vacancy) efficiently and without requiring extensive training or support.
+*   **NFR-USAB-003 (Clarity and Consistency):** Information, navigation, and interactive elements MUST be clear, consistent, and predictable throughout the application.
+*   **NFR-USAB-004 (Feedback to User):** The system MUST provide timely and clear feedback to users in response to their actions (e.g., success messages, validation errors, loading indicators).
+*   **NFR-USAB-005 (Error Prevention and Recovery):** The system SHOULD be designed to prevent common user errors. When errors do occur, they MUST be explained clearly, and users SHOULD be able to recover easily.
+*   **NFR-USAB-006 (Mobile Responsiveness):** The public-facing interfaces (Jobseeker, Publisher) MUST be fully responsive and usable on common mobile and tablet devices.
+*   **NFR-USAB-007 (User Research):** Usability SHOULD be validated through user research and testing with representative users, where feasible.
+
 ### 5.7 Accessibility Requirements
+The system MUST be accessible to all users, including those with disabilities.
+
+*   **NFR-ACC-001 (WCAG Compliance):** All user-facing interfaces MUST comply with Web Content Accessibility Guidelines (WCAG) 2.1 Level AA.
+*   **NFR-ACC-002 (Keyboard Navigation):** All functionality MUST be operable via keyboard only.
+*   **NFR-ACC-003 (Screen Reader Compatibility):** The system MUST be compatible with common screen readers, providing appropriate semantic markup and ARIA attributes where necessary.
+*   **NFR-ACC-004 (Visual Design):** Sufficient color contrast, readable font sizes, and clear visual hierarchy MUST be maintained.
+*   **NFR-ACC-005 (Alternative Text):** All informative images MUST have appropriate alternative text. Decorative images SHOULD be implemented in a way that screen readers can ignore them.
+*   **NFR-ACC-006 (Forms):** Forms MUST be accessible, with clear labels, instructions, and error messages associated with their respective fields.
+*   **NFR-ACC-007 (Accessibility Testing):** Regular accessibility testing, including automated tools (e.g., Lighthouse, pa11y) and manual checks, MUST be performed.
+
 ### 5.8 Data Integrity Requirements
+The system MUST ensure the accuracy, consistency, and reliability of its data.
+
+*   **NFR-DI-001 (Input Validation):** All data inputs MUST be validated against defined rules (e.g., data types, formats, ranges, presence) before being persisted.
+*   **NFR-DI-002 (Database Constraints):** Database-level constraints (e.g., NOT NULL, UNIQUE, foreign keys) MUST be used to enforce data integrity where appropriate.
+*   **NFR-DI-003 (Transactional Operations):** Operations that involve multiple data changes SHOULD be performed within database transactions to ensure atomicity (all changes succeed or all fail).
+*   **NFR-DI-004 (Data Consistency):** Business rules MUST be applied consistently across the application to prevent contradictory or invalid data states (e.g., a vacancy cannot have an application deadline in the past).
+*   **NFR-DI-005 (Audit Trails):** Changes to critical data (e.g., vacancy status, user roles) SHOULD be auditable, potentially using tools like PaperTrail (as indicated by the `versions` table in `schema.rb`).
+*   **NFR-DI-006 (Protection Against Data Corruption):** Mechanisms should be in place to prevent and detect data corruption, including regular backups and integrity checks if deemed necessary.
+
 ### 5.9 Localization and Internationalization
+Requirements related to supporting multiple languages, regions, and cultural conventions.
+
+*   **NFR-L10N-001 (Primary Language):** The service is primarily for users in England, and the primary language of the interface and content MUST be English (UK).
+*   **NFR-L10N-002 (I18n Framework):** The application MUST use Rails' built-in I18n framework to manage all user-facing strings (labels, messages, etc.). This allows for potential future localization, even if not immediately required. (Evidenced by `config/locales` and I18n usage in code).
+*   **NFR-L10N-003 (Current Scope):** There are no current requirements to support languages other than English or regions outside of England.
+*   **NFR-L10N-004 (Date and Time Formats):** Dates and times SHOULD be displayed in a format commonly understood in the UK (e.g., DD/MM/YYYY).
+
 ### 5.10 Operational Requirements
+Requirements related to the day-to-day operation, monitoring, and support of the system.
+
+*   **NFR-OPS-001 (Deployment):** Deployments MUST be automated via CI/CD pipelines (GitHub Actions). The process MUST be reliable, repeatable, and allow for rollbacks if issues occur.
+*   **NFR-OPS-002 (Monitoring):** Comprehensive monitoring MUST be in place for application performance (Skylight), errors (Sentry), infrastructure health (Azure Monitor), and uptime (StatusCake). Alerts MUST be configured to notify the support/operations team of critical issues.
+*   **NFR-OPS-003 (Logging):** Aggregated and structured logging (SemanticLogger, potentially to Logit.io/Kibana) MUST be available for troubleshooting, auditing, and operational analysis.
+*   **NFR-OPS-004 (Backup and Recovery):** Regular automated backups of the PostgreSQL database MUST be performed. Documented procedures for restoring the service from backup MUST exist and be tested periodically. (See `documentation/operations/maintenance/database-backups.md`).
+*   **NFR-OPS-005 (Secrets Management):** Secure procedures for managing and rotating application secrets MUST be followed.
+*   **NFR-OPS-006 (Infrastructure as Code):** Infrastructure (Azure resources) MUST be managed using Terraform.
+*   **NFR-OPS-007 (Maintenance Mode):** The system MUST provide a mechanism to enable a maintenance mode, displaying a user-friendly page while backend maintenance is performed. (See `documentation/operations/maintenance/maintenance-mode.md`).
+*   **NFR-OPS-008 (Support Tools):** The Support User interface MUST provide necessary tools for DfE support staff to assist users and manage service aspects as defined in Section 3.8.
+*   **NFR-OPS-009 (Documentation):** Operational runbooks, incident response plans, and contact lists MUST be maintained and accessible to the operations team. (See `documentation/operations/monitoring/alert-runbook.md`).
 
 ## 6. Data Requirements
 
@@ -1225,7 +1413,39 @@ Part of the `noticed` gem, stores individual notifications generated by events.
 *   `updated_at` (`datetime`): `NOT NULL`.
 
 ### 6.3 Data Retention and Archival
-*(This section will detail policies and requirements for data retention, archival, and deletion, in compliance with GDPR and DfE policies.)*
+The Teaching Vacancies service implements data retention and deletion policies to comply with data protection principles (such as GDPR's storage limitation and data minimisation) and to manage data lifecycle. Archival for analytical purposes is primarily handled by exporting data to external analytics platforms (e.g., Google BigQuery via DfE Analytics).
+
+*   **NFR-DR-001 (General Principle):** Data SHOULD NOT be kept for longer than necessary for the purpose for which it was collected. Specific retention periods are defined for different data types.
+
+*   **NFR-DR-002 (Jobseeker Accounts):**
+    *   Jobseeker accounts that have been inactive (no sign-in) for 5 years (specifically, where `last_sign_in_at` is 5 years and 2 weeks ago) ARE permanently deleted.
+    *   Associated data such as subscriptions and feedback linked directly to the jobseeker by email or ID ARE also deleted when the account is destroyed (`DestroyInactiveAccountsJob`).
+    *   Incomplete Jobseeker Profiles (e.g., missing right to work information) MAY be deactivated (`active = false`) rather than immediately deleted (`deactivate_incomplete_jobseeker_profiles.rake`).
+
+*   **NFR-DR-003 (Job Applications):**
+    *   Draft job applications for vacancies that have already expired ARE permanently deleted if the draft was last updated more than 5 years ago (`DeleteOldDraftApplicationsForExpiredVacanciesJob`).
+    *   Submitted job applications ARE permanently deleted if they were submitted more than 5 years ago. However, if all of a jobseeker's applications are older than 5 years, the system MAY retain the single most recent application to provide a historical record for the jobseeker, while deleting all others (`DeleteOldNonDraftJobApplicationsJob`).
+    *   Publishers ARE notified approximately 1 year (351 days) after a vacancy expires that the application data will soon reach its nominal expiry for their access/download purposes, encouraging them to manage data they are responsible for (`SendJobApplicationDataExpiryNotifierJob`).
+
+*   **NFR-DR-004 (Vacancies):**
+    *   Vacancies that were "trashed" or marked as "removed_from_external_system" ARE soft-deleted by having their `discarded_at` timestamp set. They are not immediately hard-deleted from the primary database by this process (`dicard_trashed_vacancies.rake`).
+    *   Stale vacancy records (e.g., those with no `job_title`) MAY be hard-deleted for data hygiene (`RemoveStaleVacanciesJob`).
+    *   Expired vacancies ARE removed from the Google search index via a scheduled job (`RemoveExpiredVacanciesFromGoogleIndexJob`).
+
+*   **NFR-DR-005 (Feedback):**
+    *   User feedback records (from jobseekers, publishers, or anonymous users) ARE permanently deleted if created more than 5 years ago (`DeleteOldFeedbackJob`).
+
+*   **NFR-DR-006 (Subscriptions and Alerts):**
+    *   Job alert subscriptions associated with email addresses that result in permanent delivery failures (as reported by GOV.UK Notify) ARE permanently deleted (`RemoveInvalidSubscriptionsJob`).
+    *   `AlertRun` records (which log the execution of job alerts) ARE permanently deleted after 1 week (`DeleteOldAlertRunsJob`).
+
+*   **NFR-DR-007 (Temporary Data):**
+    *   Emergency Login Keys, which are temporary by nature, ARE periodically deleted (`ClearEmergencyLoginKeysJob`).
+
+*   **NFR-DR-008 (Data Archival for Analytics):**
+    *   While operational data is subject to deletion based on retention policies, data IS exported to DfE Analytics (Google BigQuery) for long-term storage, reporting, and analytical purposes (as per ADR 0002 and evidence of `DfE::Analytics` integration). This can be considered the primary archival mechanism for historical analysis.
+
+*   **NFR-DR-009 (User-Requested Deletion):** Jobseekers MUST have an option to request deletion of their account and associated personal data, in line with GDPR right to erasure (as stated in FR-JS-PROF-008). The implementation of this would trigger deletion of their PII from the operational database, subject to any legal holds or overriding legitimate interests.
 
 ## 7. Use Cases
 
