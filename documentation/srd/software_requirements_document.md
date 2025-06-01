@@ -509,17 +509,108 @@ The Teaching Vacancies service provides distinct web-based user interfaces tailo
 *   **Description:** Used for authenticating Jobseeker users. It provides identity verification for jobseekers.
 *   **Interaction Protocol:** OpenID Connect (OIDC) for authentication.
 #### 4.3.3 DWP Find a Job Service
-*   **Description:** Vacancy data is exported to the Department for Work and Pensions' "Find a Job" service to reach a wider audience of jobseekers.
+*   **Description:** Vacancy data is exported to the Department for Work and Pensions' (DWP) "Find a Job" service to reach a wider audience of jobseekers. This is achieved through a daily batch process that generates and uploads XML files via SFTP. Two main types of XML files are generated: one for new and updated vacancies, and another for vacancies that were closed early.
 *   **Interaction Protocol:** Daily XML bulk uploads via SFTP.
+*   **Schema for New/Updated Vacancies XML:**
+    *   Root Element: `<Vacancies>`
+    *   Child Element: `<Vacancy>` (one per vacancy)
+        *   Attribute: `vacancyRefCode` (Teaching Vacancies `vacancy.id`, potentially versioned e.g., `[id]-1`, `[id]-2` due to DWP's 30-day reposting requirement).
+        *   Child Elements:
+            *   `<Title>`: Job title (`vacancy.job_title`).
+            *   `<Description>`: Composite field including skills/experience, school offer, further details, and safeguarding information. HTML is converted to plain text.
+            *   `<Location>`:
+                *   `<StreetAddress>`: Organisation address (`org.address`, optional).
+                *   `<City>`: Organisation town (`org.town`, optional).
+                *   `<State>`: Organisation county (`org.county`, optional).
+                *   `<PostalCode>`: Organisation postcode (`org.postcode`, **mandatory for export**).
+            *   `<VacancyExpiry>`: Vacancy expiry date (`vacancy.expires_at`, YYYY-MM-DD format), adjusted for DWP's 30-day reposting cycle.
+            *   `<VacancyType id="[type_id]">`: Mapped from `vacancy.contract_type`:
+                *   "permanent" -> 1 (Permanent)
+                *   "fixed_term" -> 2 (Contract)
+                *   "casual" -> 3 (Temporary)
+            *   `<VacancyStatus id="[status_id]">`: Mapped from `vacancy.working_patterns`:
+                *   "full_time" or ("term_time" and not "part_time") -> 1 (Full-time)
+                *   Else -> 2 (Part-time)
+            *   `<VacancyCategory id="[category_id]">`: Mapped from `vacancy.job_roles`:
+                *   Includes "it_support" -> 14 (IT)
+                *   Else -> 27 (Education)
+            *   `<ApplyMethod id="2">`: Hardcoded to '2' (Apply via external URL).
+            *   `<ApplyUrl>`: URL to the vacancy on the Teaching Vacancies service (`job_url(vacancy)`).
+*   **Schema for Closed Early Vacancies XML:**
+    *   Root Element: `<ExpireVacancies>`
+    *   Child Element: `<ExpireVacancy>` (one per closed vacancy)
+        *   Attribute: `vacancyRefCode` (Teaching Vacancies `vacancy.id`, versioned as above).
+*   **Data Handling Notes:**
+    *   The `versioning.rb` service handles the `vacancyRefCode` adjustments for DWP's 30-day reposting cycle.
+    *   HTML content in descriptions is sanitized and converted to plain text. Invalid XML characters are removed.
+    *   The export jobs (`ExportVacanciesPublishedAndUpdatedSinceYesterdayToDwpFindAJobServiceJob` and `ExportVacanciesClosedEarlySinceYesterdayToDwpFindAJobServiceJob`) utilize service classes in `Vacancies::Export::DwpFindAJob::` to generate and upload these XML files.
 #### 4.3.4 Publisher ATS API
-*   **Description:** An API provided by Teaching Vacancies to allow third-party Applicant Tracking Systems (ATS) used by schools/trusts to programmatically manage vacancies on the Teaching Vacancies platform. This enables organisations to maintain their vacancy information within their chosen ATS as the primary source of truth, with changes automatically reflected on Teaching Vacancies.
-    *   The API supports operations such as:
-        *   Creating new vacancies.
-        *   Updating existing vacancies.
-        *   Closing vacancies.
-        *   Potentially retrieving information about vacancies posted via the ATS.
-    *   Vacancies managed via the ATS API are identifiable and may have different management rules within the publisher dashboard (e.g., limited direct editability on Teaching Vacancies).
-*   **Interaction Protocol:** HTTPS/JSON. Authentication is typically via API keys managed by Support Users.
+*   **Description:** An API provided by Teaching Vacancies to allow third-party Applicant Tracking Systems (ATS) used by schools/trusts to programmatically manage vacancies on the Teaching Vacancies platform. This enables organisations to maintain their vacancy information within their chosen ATS as the primary source of truth, with changes automatically reflected on Teaching Vacancies. The API documentation is generated using `rswag` and is available at `/ats-api-docs/index.html` on the respective environments.
+*   **Interaction Protocol:** HTTPS/JSON.
+*   **Authentication:** API key sent in the `X-Api-Key` header. API clients and keys are managed by Support Users.
+*   **Base URL:** `/ats-api/v1`
+*   **Key Endpoints and Operations:**
+    *   **`GET /vacancies`**:
+        *   **Description:** Lists vacancies created by the authenticated ATS client.
+        *   **Query Parameters:** `page` (integer, for pagination).
+        *   **Response Schema (`vacancies_response`):** Contains an array of `vacancy_response` objects and pagination `meta` data (totalPages, count).
+    *   **`POST /vacancies`**:
+        *   **Description:** Creates a new vacancy.
+        *   **Request Body Schema (`vacancy_request`):** See details below.
+        *   **Successful Response (201 Created):** `create_vacancy_response` (contains the `id` of the new vacancy).
+        *   **Error Responses:** 400 (Bad Request), 401 (Unauthorized), 409 (Conflict - e.g., duplicate `external_reference`), 422 (Unprocessable Entity - validation errors), 500 (Internal Server Error).
+    *   **`GET /vacancies/{id}`**:
+        *   **Description:** Retrieves a specific vacancy by its Teaching Vacancies ID.
+        *   **Path Parameter:** `id` (string, UUID of the vacancy).
+        *   **Response Schema (`vacancy_response`):** See details below.
+        *   **Error Responses:** 401, 404 (Not Found), 500.
+    *   **`PUT /vacancies/{id}`**:
+        *   **Description:** Updates an existing vacancy by its Teaching Vacancies ID. All required fields from `vacancy_request` must be sent. Optional fields not provided will retain their existing values.
+        *   **Path Parameter:** `id` (string, UUID of the vacancy).
+        *   **Request Body Schema (`vacancy_request`):** See details below.
+        *   **Successful Response (200 OK):** `vacancy_response` (the updated vacancy).
+        *   **Error Responses:** 400, 401, 404, 409, 422, 500.
+    *   **`DELETE /vacancies/{id}`**:
+        *   **Description:** Deletes a vacancy by its Teaching Vacancies ID.
+        *   **Path Parameter:** `id` (string, UUID of the vacancy).
+        *   **Successful Response (204 No Content):** Empty body.
+        *   **Error Responses:** 401, 404, 500.
+
+*   **Key Data Schema Details (`vacancy` object within `vacancy_request`):**
+    *   **Wrapper object:** The main payload is wrapped, e.g., `{ "vacancy": { ...details... } }`.
+    *   **Required Fields:**
+        *   `external_advert_url` (string, URI format): Link to the advert on the ATS/school website.
+        *   `expires_at` (string, datetime format, e.g., "2030-03-13T15:30:00Z"): Vacancy expiry date and time.
+        *   `job_title` (string): e.g., "Teacher of Geography".
+        *   `job_advert` (string): Detailed job description text.
+        *   `salary` (string): e.g., "£12,345 to £67,890".
+        *   `external_reference` (string): Client's unique identifier for the vacancy. Used to prevent duplicates (causes 409 Conflict if an existing vacancy from the same client has this reference).
+        *   `job_roles` (array of strings): Enum values from `Vacancy.job_roles.keys` (e.g., ["teacher", "leadership"]). Min 1 item.
+        *   `working_patterns` (array of strings): Enum values from `Vacancy::WORKING_PATTERNS` (e.g., ["full_time", "part_time"]). Min 1 item.
+        *   `contract_type` (string): Enum value from `Vacancy.contract_types.keys` (e.g., "permanent", "fixed_term").
+        *   `phases` (array of strings): Enum values from `Vacancy.phases.keys` (e.g., ["secondary", "primary"]). Min 1 item.
+        *   `schools` (object): Defines the school(s) or trust for the vacancy. Has a `oneOf` structure allowing:
+            *   `{ "trust_uid": "string", "school_urns": ["string", ...] }`: Associates with specified schools within the trust. `school_urns` can be empty if for trust central office.
+            *   `{ "school_urns": ["string", ...] }`: Associates with one or more specific schools (min 1 URN).
+            *   `{ "trust_uid": "string" }`: Associates with the trust central office.
+    *   **Optional Fields:**
+        *   `publish_on` (string, date format, e.g., "2025-01-01"): Defaults to current date if not provided.
+        *   `benefits_details` (string): e.g., "TLR2a".
+        *   `starts_on` (string): Textual description of start date, e.g., "Next April", "2026-10-12".
+        *   `visa_sponsorship_available` (boolean): Defaults to `false`.
+        *   `is_job_share` (boolean): Defaults to `false`.
+        *   `ect_suitable` (boolean): Maps to `ect_status` in the model.
+        *   `key_stages` (array of strings): Enum values from `Vacancy.key_stages.keys`.
+        *   `subjects` (array of strings): Enum values from pre-defined subject list (`SUBJECT_OPTIONS`).
+
+*   **Key Data Schema Details (`vacancy_response` object):**
+    *   Includes all fields from the request (or their processed values) plus:
+        *   `id` (string, UUID): The Teaching Vacancies unique identifier for the vacancy.
+        *   `public_url` (string, URI, nullable): The URL to view the vacancy on the Teaching Vacancies website (null if not currently published).
+    *   The `schools` object in the response typically includes `school_urns` (array) and `trust_uid` (string, nullable).
+    *   `ect_suitable` (boolean) is returned based on the internal `ect_status`.
+
+*   **Error Handling:** The API uses standard HTTP status codes for errors and provides JSON error messages, typically in an `errors` array (e.g., `{"errors": ["message1", "message2"]}`). Specific error schemas like `bad_request_error`, `unauthorized_error`, `not_found_error`, `conflict_error`, `validation_error`, and `internal_server_error` are defined.
 #### 4.3.5 Google Services (reCAPTCHA, Drive)
 *   **Description:** Integration with Google reCAPTCHA v3 for bot mitigation on public forms and Google Drive for temporary storage and virus scanning of uploaded documents.
 *   **Interaction Protocol (reCAPTCHA):** JavaScript integration on the client-side and server-side API calls for verification.
@@ -1719,7 +1810,11 @@ The Teaching Vacancies service implements data retention and deletion policies t
     *   The Jobseeker's profile information is created or updated in the system.
     *   This updated information MAY be used to pre-fill future job applications made through the platform.
     *   If account deletion was requested, the account and associated data are scheduled for deletion or anonymization according to system policies.
-
+  - [7.7 UC-007: Support User Manages User Feedback](#77-uc-007-support-user-manages-user-feedback)
+  - [7.8 UC-008: Support User Manages Publisher ATS API Client](#78-uc-008-support-user-manages-publisher-ats-api-client)
+  - [7.9 UC-009: System Sends Job Alert Email to Jobseeker](#79-uc-009-system-sends-job-alert-email-to-jobseeker)
+  - [7.10 UC-010: System Exports Vacancies to DWP Find a Job](#710-uc-010-system-exports-vacancies-to-dwp-find-a-job)
+### 7.6 UC-006: Jobseeker Manages Personal Profile
 ### 7.7 UC-007: Support User Manages User Feedback
 *   **Actor:** Support User (DfE Staff with appropriate permissions).
 *   **Scope:** Viewing, filtering, and potentially actioning user-submitted feedback regarding the Teaching Vacancies service.
