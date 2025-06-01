@@ -1754,8 +1754,114 @@ The Teaching Vacancies service implements data retention and deletion policies t
     *   Feedback data MAY be exported.
     *   Appropriate actions based on feedback content MAY have been initiated outside the system.
 ### 7.8 UC-008: Support User Manages Publisher ATS API Client
+*   **Actor:** Support User (DfE Staff with specific permissions for ATS client management).
+*   **Scope:** Managing API client credentials for third-party Applicant Tracking Systems (ATS) that integrate with the Publisher ATS API.
+*   **Level:** User Goal.
+*   **Preconditions:**
+    *   Support User is authenticated with the necessary privileges to access the ATS API client management section of the support interface. (Ref: FR-SUP-AUTH-001, FR-SUP-AUTH-002).
+    *   A publisher or ATS provider has requested API access, or an existing client needs management.
+*   **Main Success Scenario (Flow - Create New API Client):**
+    1.  Support User navigates to the Publisher ATS API client management section.
+    2.  Support User initiates the creation of a new API client. (Ref: FR-SUP-ATS-002).
+    3.  System prompts for necessary information, such as the name of the ATS provider or publishing organisation.
+    4.  Support User enters the required details.
+    5.  System generates a unique API key for the new client.
+    6.  System stores the client details (name, hashed API key, creation date, last rotated date).
+    7.  System displays the generated API key to the Support User ONCE for secure transmission to the ATS provider/publisher. Business Rule: The API key itself should not be stored in plain text by the Teaching Vacancies system after initial generation and display for copying; only a hash for verification if needed, or rely on the key being stored by the client. (Standard secure practice for API keys).
+    8.  Support User securely communicates the API key to the authorized recipient.
+*   **Alternative Scenario (View API Clients):**
+    1.  Support User navigates to the Publisher ATS API client management section.
+    2.  System displays a list of existing API clients, showing names, creation dates, and potentially last usage/rotation dates. (Ref: FR-SUP-ATS-001). API keys themselves are not displayed.
+*   **Alternative Scenario (Re-issue/Rotate API Key):**
+    1.  Support User selects an existing API client from the list.
+    2.  Support User chooses an option to re-issue or rotate the API key (e.g., if the old key is compromised or as part of a regular rotation policy). (Ref: FR-SUP-ATS-003).
+    3.  System generates a new unique API key for the client.
+    4.  System updates the client's stored API key information (e.g., new hashed key, updates `last_rotated_at` timestamp). The old key is invalidated.
+    5.  System displays the new API key to the Support User ONCE for secure transmission.
+    6.  Support User securely communicates the new API key to the authorized recipient.
+*   **Alternative Scenario (Deactivate API Client):**
+    1.  Support User selects an existing API client from the list.
+    2.  Support User chooses an option to deactivate the API client. (Ref: FR-SUP-ATS-004).
+    3.  System marks the API client as inactive or deletes it, effectively revoking its access.
+    4.  System confirms the deactivation.
+*   **Postconditions:**
+    *   **Create/Re-issue:** A new, active API client credential exists and has been communicated to the relevant party. The old key (if re-issued) is invalidated.
+    *   **View:** Support User has reviewed the list of API clients.
+    *   **Deactivate:** The selected API client's access is revoked.
 ### 7.9 UC-009: System Sends Job Alert Email to Jobseeker
+*   **Actor:** System (specifically, the automated job alert processing component, e.g., a Sidekiq background job).
+*   **Scope:** Automatically generating and sending email notifications to Jobseekers about new vacancies that match their saved job alert criteria.
+*   **Level:** System Function / Background Task.
+*   **Trigger:**
+    *   Scheduled interval (e.g., daily, hourly) for processing job alerts.
+    *   OR event-driven (e.g., triggered after a new vacancy is published, though batching is more common for alerts).
+*   **Preconditions:**
+    *   There are active job alert subscriptions (`subscriptions` table) with defined search criteria and recipient email addresses. (Ref: UC-004).
+    *   New vacancies have been published since the last alert run for a given subscription.
+    *   The GOV.UK Notify service is operational.
+*   **Main Success Scenario (Flow):**
+    1.  System initiates the job alert processing task (e.g., a scheduled job like `SendDailyAlertEmailJob` or `SendWeeklyAlertEmailJob` starts).
+    2.  System iterates through active job alert subscriptions.
+    3.  For each subscription:
+        a. System retrieves the Jobseeker's saved search criteria.
+        b. System queries the database for new vacancies published since the subscription's last alert run (or within the relevant period for the alert frequency, e.g., last 24 hours for daily alerts) that match these criteria. (Ref: FR-JS-ALERT-003).
+        c. If matching new vacancies are found:
+            i.  System compiles a list of these vacancies.
+            ii. System formats an email containing the list of matching vacancies (e.g., job title, school, location, link to vacancy).
+            iii.System sends the email to the Jobseeker's subscribed email address via the GOV.UK Notify API.
+            iv. System records the alert run (e.g., in `alert_runs` table), noting the vacancies sent to prevent re-sending in the next immediate run for the same frequency.
+*   **Extensions (Alternative Flows):**
+    *   **3c.ii. No New Matching Vacancies:**
+        1.  If no new vacancies match the criteria for a subscription, no email is sent for that subscription during this run. System proceeds to the next subscription.
+    *   **3c.iii.1. GOV.UK Notify Service Error:**
+        1.  If the GOV.UK Notify service returns an error during an email send attempt:
+            a. System SHOULD log the error.
+            b. The failed email delivery MAY be retried according to a defined retry policy (e.g., Sidekiq's retry mechanism).
+            c. If retries are exhausted, the failure is logged, and the system may mark the subscription for review if failures are persistent (see UC-007 for feedback/support processes, and `RemoveInvalidSubscriptionsJob` for permanent failures).
+*   **Postconditions:**
+    *   Jobseekers with matching active job alerts have been sent an email listing new relevant vacancies.
+    *   Alert run information is logged by the system.
+    *   No emails are sent to Jobseekers if no new vacancies match their alert criteria.
 ### 7.10 UC-010: System Exports Vacancies to DWP Find a Job
+*   **Actor:** System (specifically, an automated background job processing component, e.g., Sidekiq).
+*   **Scope:** Automatically generating and exporting vacancy data to the Department for Work and Pensions (DWP) "Find a Job" service.
+*   **Level:** System Function / Background Task.
+*   **Trigger:** Scheduled interval (typically daily). (Ref: `ExportVacanciesPublishedAndUpdatedSinceYesterdayToDwpFindAJobServiceJob.rb` and `ExportVacanciesClosedEarlySinceYesterdayToDwpFindAJobServiceJob.rb` suggest daily runs).
+*   **Preconditions:**
+    *   There are newly published, updated, or recently closed early vacancies in the Teaching Vacancies system that need to be communicated to DWP.
+    *   The SFTP server details and credentials for the DWP Find a Job service are correctly configured and accessible.
+*   **Main Success Scenario (Flow):**
+    1.  System initiates the DWP vacancy export task (e.g., a scheduled Sidekiq job).
+    2.  **Exporting New/Updated Vacancies:**
+        a. System queries the database for all vacancies that have been published or updated since the last successful export (e.g., within the last 24 hours).
+        b. System formats the data for these vacancies into the required XML structure specified by DWP.
+        c. System generates an XML file containing these new/updated vacancies.
+        d. System connects to the DWP SFTP server using the configured credentials.
+        e. System securely uploads the generated XML file to the designated directory on the SFTP server.
+        f. System logs the successful export, including the number of vacancies processed and the filename.
+    3.  **Exporting Closed Early Vacancies (Potentially a separate job/file):**
+        a. System queries the database for all vacancies that have been marked as "closed early" since the last successful export for closed vacancies.
+        b. System formats the data for these closed vacancies (typically identifiers) into the required XML structure for removals/updates on DWP's side.
+        c. System generates an XML file containing these closed vacancies.
+        d. System connects to the DWP SFTP server.
+        e. System securely uploads this XML file.
+        f. System logs the successful export of closed vacancies.
+*   **Extensions (Alternative Flows):**
+    *   **2a/3a. No New/Updated/Closed Vacancies:**
+        1.  If no relevant vacancies are found for export, the system MAY still generate an empty XML file (if required by DWP) or simply log that no data was exported for the period.
+    *   **2d/3d. SFTP Connection/Upload Failure:**
+        1.  If the system fails to connect to the SFTP server or if the file upload fails:
+            a. System SHOULD log the error in detail.
+            b. The export operation SHOULD be retried according to a defined retry policy (e.g., Sidekiq's retry mechanism).
+            c. If retries are exhausted, the failure is logged prominently, and an alert MAY be raised for operational staff to investigate manually.
+    *   **2b/3b. Data Formatting Error:**
+        1.  If an error occurs during XML generation (e.g., due to unexpected data in a vacancy record):
+            a. System SHOULD log the problematic vacancy record and the error.
+            b. The specific vacancy causing the error MAY be excluded from the current batch to allow other valid vacancies to be exported.
+            c. An alert or notification SHOULD be raised for investigation of the data issue.
+*   **Postconditions:**
+    *   Relevant new, updated, and closed early vacancy information from Teaching Vacancies has been successfully exported as XML files to the DWP Find a Job SFTP server.
+    *   The export process, including any errors, is logged by the system.
 ## Appendix A: Business Rules Catalogue
 This appendix lists key business rules identified throughout the document. These rules govern specific behaviors, constraints, and data validations within the Teaching Vacancies service. The IDs are assigned for traceability.
 
