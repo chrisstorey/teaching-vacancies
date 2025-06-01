@@ -51,14 +51,40 @@
 - [6. Data Requirements](#6-data-requirements)
   - [6.1 Data Model Overview (Conceptual)](#61-data-model-overview-conceptual)
   - [6.2 Detailed Data Dictionary (Key Entities)](#62-detailed-data-dictionary-key-entities)
-    - [6.2.1 Vacancy](#621-vacancy)
-    - [6.2.2 Jobseeker / User](#622-jobseeker--user)
-    - [6.2.3 Publisher / User](#623-publisher--user)
-    - [6.2.4 Organisation (School, Trust, LA)](#624-organisation-school-trust-la)
-    - [6.2.5 JobApplication](#625-jobapplication)
-    - [6.2.6 Subscription (Job Alert)](#626-subscription-job-alert)
-    - [6.2.7 JobseekerProfile](#627-jobseekerprofile)
-    - *(Others to be added as identified)*
+    - [6.2.1 Vacancies (`vacancies`)](#621-vacancies-vacancies)
+    - [6.2.2 Jobseekers (`jobseekers`)](#622-jobseekers-jobseekers)
+    - [6.2.3 Publishers (`publishers`)](#623-publishers-publishers)
+    - [6.2.4 Organisations (`organisations`)](#624-organisations-organisations)
+    - [6.2.5 Job Applications (`job_applications`)](#625-job-applications-job_applications)
+    - [6.2.6 Jobseeker Profiles (`jobseeker_profiles`)](#626-jobseeker-profiles-jobseeker_profiles)
+    - [6.2.7 Job Preferences (`job_preferences`)](#627-job-preferences-job_preferences)
+    - [6.2.8 Job Preferences Locations (`job_preferences_locations`)](#628-job-preferences-locations-job_preferences_locations)
+    - [6.2.9 Employments (`employments`)](#629-employments-employments)
+    - [6.2.10 Qualifications (`qualifications`)](#6210-qualifications-qualifications)
+    - [6.2.11 Qualification Results (`qualification_results`)](#6211-qualification-results-qualification_results)
+    - [6.2.12 Personal Details (`personal_details`)](#6212-personal-details-personal_details)
+    - [6.2.13 References (`references`)](#6213-references-references)
+    - [6.2.14 Subscriptions (Job Alerts) (`subscriptions`)](#6214-subscriptions-job-alerts-subscriptions)
+    - [6.2.15 Alert Runs (`alert_runs`)](#6215-alert-runs-alert_runs)
+    - [6.2.16 Feedbacks (`feedbacks`)](#6216-feedbacks-feedbacks)
+    - [6.2.17 Notes (`notes`)](#6217-notes-notes)
+    - [6.2.18 Equal Opportunities Reports (`equal_opportunities_reports`)](#6218-equal-opportunities-reports-equal_opportunities_reports)
+    - [6.2.19 Organisation Vacancies (`organisation_vacancies`)](#6219-organisation-vacancies-organisation_vacancies)
+    - [6.2.20 Organisation Publishers (`organisation_publishers`)](#6220-organisation-publishers-organisation_publishers)
+    - [6.2.21 School Group Memberships (`school_group_memberships`)](#6221-school-group-memberships-school_group_memberships)
+    - [6.2.22 Local Authority Publisher Schools (`local_authority_publisher_schools`)](#6222-local-authority-publisher-schools-local_authority_publisher_schools)
+    - [6.2.23 Publisher Preferences (`publisher_preferences`)](#6223-publisher-preferences-publisher_preferences)
+    - [6.2.24 Markers (`markers`)](#6224-markers-markers)
+    - [6.2.25 Location Polygons (`location_polygons`)](#6225-location-polygons-location_polygons)
+    - [6.2.26 Emergency Login Keys (`emergency_login_keys`)](#6226-emergency-login-keys-emergency_login_keys)
+    - [6.2.27 Publisher ATS API Clients (`publisher_ats_api_clients`)](#6227-publisher-ats-api-clients-publisher_ats_api_clients)
+    - [6.2.28 Active Storage Attachments (`active_storage_attachments`)](#6228-active-storage-attachments-active_storage_attachments)
+    - [6.2.29 Active Storage Blobs (`active_storage_blobs`)](#6229-active-storage-blobs-active_storage_blobs)
+    - [6.2.30 Friendly ID Slugs (`friendly_id_slugs`)](#6230-friendly-id-slugs-friendly_id_slugs)
+    - [6.2.31 Sessions (`sessions`)](#6231-sessions-sessions)
+    - [6.2.32 Versions (`versions`)](#6232-versions-versions)
+    - [6.2.33 Noticed Events (`noticed_events`)](#6233-noticed-events-noticed_events)
+    - [6.2.34 Noticed Notifications (`noticed_notifications`)](#6234-noticed-notifications-noticed_notifications)
   - [6.3 Data Retention and Archival](#63-data-retention-and-archival)
 - [7. Use Cases](#7-use-cases)
   - [7.1 UC-001: Jobseeker Searches for Vacancy](#71-uc-001-jobseeker-searches-for-vacancy)
@@ -240,7 +266,10 @@ This section outlines the major functional capabilities of the Teaching Vacancie
     *   **FR-PUB-AUTH-003:** The system MUST manage Publisher sessions (e.g., session creation, timeouts, secure logout).
     *   **FR-PUB-AUTH-004:** Publishers MUST only be able to manage vacancies and view applications for the organisation(s) they are explicitly associated with.
     *   **FR-PUB-AUTH-005:** The system SHOULD provide a fallback authentication mechanism for Publishers if DfE Sign-in is unavailable (e.g., magic link to registered email, potentially with reduced privileges or requiring re-verification). Business Rule: Fallback access rules to be defined.
-*   **Support/Admin Specific Requirements:** (To be detailed in a subsequent step)
+*   **Support User Specific Requirements:**
+    *   **FR-SUP-AUTH-001:** Support Users MUST authenticate using their DfE credentials, likely integrated with DfE Sign-in or a similar internal identity provider, to access the support interface.
+    *   **FR-SUP-AUTH-002:** The system MUST differentiate Support Users with appropriate roles/permissions to access support-specific functionalities. Business Rule: Specific roles and permissions for support users to be defined (e.g., Level 1 Support, Level 2 Support with different capabilities).
+    *   **FR-SUP-AUTH-003:** Support User sessions MUST be managed securely, including appropriate timeout periods.
 
 ### 3.2 Vacancy Management (Publisher Facing)
 *   **Description:** Enables publishers to create, advertise, and manage job vacancies within their organisations.
@@ -385,9 +414,33 @@ This section outlines the major functional capabilities of the Teaching Vacancie
 
 ### 3.8 Support User Functions
 *   **Description:** Provides DfE support staff with tools to manage the service and assist users.
-*   **Key Capabilities (High-Level):** (Support-focused, to be detailed in a subsequent step)
-    *   Access to a support dashboard...
-    *   ...
+*   **Authentication and Access:**
+    *   **FR-SUP-AUTH-001:** Support Users MUST authenticate using their DfE credentials, likely integrated with DfE Sign-in or a similar internal identity provider, to access the support interface.
+    *   **FR-SUP-AUTH-002:** The system MUST differentiate Support Users with appropriate roles/permissions to access support-specific functionalities. Business Rule: Specific roles and permissions for support users to be defined (e.g., Level 1 Support, Level 2 Support with different capabilities).
+    *   **FR-SUP-AUTH-003:** Support User sessions MUST be managed securely, including appropriate timeout periods.
+*   **Support Dashboard:**
+    *   **FR-SUP-DASH-001:** Support Users MUST have access to a dashboard providing an overview of key service metrics and links to support functionalities.
+    *   **FR-SUP-DASH-002:** Key metrics MAY include: total active vacancies, new vacancies today, total jobseekers, new jobseeker registrations today, total publishers, number of job alerts, number of applications submitted today/this week.
+*   **Feedback Management:**
+    *   **FR-SUP-FDBK-001:** The system MUST allow authenticated Support Users to view a list of all user-submitted feedback (from Jobseekers and Publishers).
+    *   **FR-SUP-FDBK-002:** The feedback list MUST be filterable by feedback type (e.g., 'general', 'job_alert_unsubscribe', 'vacancy_feedback', 'account_closure', 'report_abuse/spam').
+    *   **FR-SUP-FDBK-003:** The feedback list MUST be filterable by user type (e.g., 'Jobseeker', 'Publisher', 'Anonymous').
+    *   **FR-SUP-FDBK-004:** The feedback list MUST display key information for each item (e.g., date submitted, type, user identifier (if available), summary of feedback content, associated vacancy ID if applicable).
+    *   **FR-SUP-FDBK-005:** Support Users MUST be able to view the full details of an individual piece of feedback.
+    *   **FR-SUP-FDBK-006:** The system MAY allow Support Users to mark feedback items with a status (e.g., 'Open', 'Investigating', 'Resolved', 'Archived', 'No Action Required').
+    *   **FR-SUP-FDBK-007:** The system MUST allow Support Users to export feedback data (e.g., to CSV) for further analysis. Business Rule: Export format and included fields to be defined, ensuring PII is handled appropriately.
+*   **Publisher ATS API Client Management:**
+    *   **FR-SUP-ATS-001:** Support Users (with appropriate permissions) MUST be able to view a list of registered Publisher ATS API clients.
+    *   **FR-SUP-ATS-002:** Support Users (with appropriate permissions) MUST be able to create a new API client, generating an API key for a publisher/ATS provider. Business Rule: Process for approving and provisioning API clients to be defined.
+    *   **FR-SUP-ATS-003:** Support Users (with appropriate permissions) MUST be able to regenerate/re-issue an API key for an existing client if compromised or requested.
+    *   **FR-SUP-ATS-004:** Support Users (with appropriate permissions) MUST be able to deactivate/revoke an API client's access.
+*   **Service Data Viewing & Reporting:**
+    *   **FR-SUP-DATA-001:** Support Users SHOULD have access to a performance dashboard displaying key metrics related to job listings (e.g., number of live jobs, jobs expiring soon, jobs per region), user sign-ins, and job alert activity.
+    *   **FR-SUP-DATA-002:** Support Users MUST be able to download an aggregated Equal Opportunities Report based on anonymized data from in-platform job applications. Business Rule: Report content and format to be defined by DfE policy.
+    *   **FR-SUP-DATA-003:** Support Users MAY be able to download other operational reports, such as a list of unfilled vacancies after a certain period, or a list of schools that have not posted recently.
+*   **User Account Assistance (Limited):**
+    *   **FR-SUP-USER-001:** Support Users MAY be able to look up Jobseeker or Publisher accounts by email address or other identifiers for verification purposes. Business Rule: Access to PII must be strictly controlled and logged.
+    *   **FR-SUP-USER-002:** Support Users MAY have the ability to assist with common account issues, such as triggering a password reset email for fallback authentication methods or helping users understand DfE Sign-in/GOV.UK One Login processes. Business Rule: Direct password changes by Support Users are prohibited.
 
 ### 3.9 System Administration Functions
 *   **Description:** Enables technical staff to maintain and operate the system. These are typically not user-facing application features but backend operational capabilities.
@@ -432,16 +485,747 @@ This section outlines the major functional capabilities of the Teaching Vacancie
 ## 6. Data Requirements
 
 ### 6.1 Data Model Overview (Conceptual)
+This section provides a high-level conceptual data model illustrating the main entities of the Teaching Vacancies service and their primary relationships.
+
+```plantuml
+@startuml ConceptualDataModel
+!define ENTITY_FONT_SIZE 12
+!define ATTRIBUTE_FONT_SIZE 10
+
+hide stereotype
+skinparam defaultTextAlignment center
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 10
+skinparam class {
+    BackgroundColor PaleTurquoise
+    ArrowColor RoyalBlue
+    BorderColor RoyalBlue
+    FontSize ENTITY_FONT_SIZE
+}
+skinparam classAttribute {
+    FontSize ATTRIBUTE_FONT_SIZE
+}
+
+entity "Jobseeker" as jobseeker {
+  id (UUID)
+  email
+  govuk_one_login_id
+  --
+  *Manages profile, applies for jobs, creates subscriptions*
+}
+
+entity "Publisher" as publisher {
+  id (UUID)
+  email
+  oid (DfE Sign-in ID)
+  --
+  *Manages organisation vacancies*
+}
+
+entity "Organisation" as organisation {
+  id (UUID)
+  name
+  type (School, SchoolGroup, LA)
+  urn / uid
+  --
+  *School, Trust, or LA that lists vacancies*
+}
+
+entity "Vacancy" as vacancy {
+  id (UUID)
+  job_title
+  status (published, draft, expired)
+  expires_at
+  --
+  publisher_id (FK)
+  publisher_organisation_id (FK to Organisation)
+  --
+  *Job listing created by a Publisher*
+}
+
+entity "JobApplication" as job_application {
+  id (UUID)
+  status (submitted, shortlisted)
+  submitted_at
+  --
+  jobseeker_id (FK to Jobseeker)
+  vacancy_id (FK to Vacancy)
+  --
+  *Application by a Jobseeker for a Vacancy*
+}
+
+entity "JobseekerProfile" as jobseeker_profile {
+  id (UUID)
+  active
+  --
+  jobseeker_id (FK to Jobseeker)
+  --
+  *Jobseeker's professional profile*
+}
+
+entity "Employment" as employment {
+  id (UUID)
+  job_title
+  organisation
+  --
+  job_application_id (FK)
+  jobseeker_profile_id (FK)
+  --
+  *Work history for Jobseeker Profile or Application*
+}
+
+entity "Qualification" as qualification {
+  id (UUID)
+  name
+  grade
+  --
+  job_application_id (FK)
+  jobseeker_profile_id (FK)
+  --
+  *Educational qualification for Profile or Application*
+}
+
+entity "Subscription" as subscription {
+  id (UUID)
+  email
+  frequency
+  search_criteria (JSON)
+  --
+  *Job alert created by a Jobseeker or anonymous user*
+}
+
+entity "Feedback" as feedback {
+  id (UUID)
+  feedback_type
+  comment
+  --
+  jobseeker_id (FK, optional)
+  publisher_id (FK, optional)
+  vacancy_id (FK, optional)
+  --
+  *User feedback on various aspects of the service*
+}
+
+entity "Document (ActiveStorage)" as document {
+  (Conceptual)
+  filename
+  content_type
+  --
+  record_id (Polymorphic FK)
+  record_type (Polymorphic FK)
+  --
+  *Represents uploaded files (CVs, vacancy docs)*
+}
+
+jobseeker "1" --o{ "many" job_application : "submits"
+vacancy "1" --o{ "many" job_application : "receives"
+jobseeker "1" --o| "1" jobseeker_profile : "has"
+jobseeker "1" --o{ "many" subscription : "creates"
+
+jobseeker_profile "1" --o{ "many" employment : "has work history"
+jobseeker_profile "1" --o{ "many" qualification : "has qualifications"
+job_application "1" --o{ "many" employment : "details work history"
+job_application "1" --o{ "many" qualification : "details qualifications"
+
+publisher "1" --o{ "many" vacancy : "creates/manages"
+organisation "1" --o{ "many" vacancy : "associated with"  // via organisation_vacancies or publisher_organisation_id
+
+publisher "many" --o{ "many" organisation : "manages (via OrganisationPublisher)"
+
+vacancy "1" --o{ "many" feedback : "can have"
+jobseeker "0..1" --o{ "many" feedback : "can provide"
+publisher "0..1" --o{ "many" feedback : "can provide"
+
+' Conceptual Link for Documents
+vacancy "1" ..o{ "many" document : "has supporting"
+job_application "1" ..o{ "many" document : "has supporting"
+
+@enduml
+```
+
+*(Note: This ERD is a conceptual, simplified representation. Not all entities or detailed relationships from `db/schema.rb` are shown to maintain clarity at this overview level. For example, join tables like `organisation_vacancies` are represented by direct many-to-many style implications where appropriate for a conceptual model.)*
+
 ### 6.2 Detailed Data Dictionary (Key Entities)
-    - [6.2.1 Vacancy](#621-vacancy)
-    - [6.2.2 Jobseeker / User](#622-jobseeker--user)
-    - [6.2.3 Publisher / User](#623-publisher--user)
-    - [6.2.4 Organisation (School, Trust, LA)](#624-organisation-school-trust-la)
-    - [6.2.5 JobApplication](#625-jobapplication)
-    - [6.2.6 Subscription (Job Alert)](#626-subscription-job-alert)
-    - [6.2.7 JobseekerProfile](#627-jobseekerprofile)
-    - *(Others to be added as identified)*
+
+This section provides a more detailed breakdown of key database tables (entities) and their columns, derived from the `db/schema.rb` file.
+
+#### 6.2.1 Vacancies (`vacancies`)
+Stores information about job vacancies advertised on the service.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `job_title` (`string`): Job title of the vacancy.
+*   `slug` (`string`): `NOT NULL`. URL-friendly identifier for the vacancy, indexed.
+*   `job_advert` (`text`): Main content of the job advertisement.
+*   `benefits_details` (`text`): Details of benefits offered with the job.
+*   `starts_on` (`date`): Proposed start date for the job.
+*   `contact_email` (`string`): Email address for enquiries related to the vacancy.
+*   `status` (`integer`): Current status of the vacancy (e.g., draft, published, expired), indexed.
+*   `publish_on` (`date`): Date on which the vacancy is scheduled to be published, indexed.
+*   `created_at` (`datetime`): `precision: nil`, `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `precision: nil`, `NOT NULL`. Timestamp of last update.
+*   `application_link` (`string`): URL for external application, if applicable.
+*   `working_patterns` (`integer[]`): `array: true`. Array of applicable working patterns (e.g., full_time, part_time).
+*   `listed_elsewhere` (`integer`): Indicates if the job is listed on other platforms.
+*   `hired_status` (`integer`): Status regarding whether the position has been filled.
+*   `stats_updated_at` (`datetime`): `precision: nil`. Timestamp for when view statistics were last updated.
+*   `publisher_id` (`uuid`): Foreign key to `publishers.id`, indexed. Identifies the publisher who created the vacancy.
+*   `expires_at` (`datetime`): `precision: nil`. Date and time when the vacancy listing expires, indexed.
+*   `salary` (`string`): Salary information for the job.
+*   `about_school` (`text`): Information about the school/organisation offering the vacancy.
+*   `subjects` (`string[]`): `array: true`. Array of subjects related to the vacancy.
+*   `school_visits_details` (`text`): Information about arranging school visits.
+*   `how_to_apply` (`text`): Instructions on how to apply for the vacancy.
+*   `job_location` (`integer`): Type of job location (e.g., at_one_school, at_multiple_schools, central_office).
+*   `readable_job_location` (`string`): Human-readable job location.
+*   `job_roles` (`integer[]`): `array: true`. Array of job roles associated with the vacancy.
+*   `contact_number` (`string`): Phone number for enquiries.
+*   `publisher_organisation_id` (`uuid`): Foreign key to `organisations.id`, indexed. The organisation on whose behalf the vacancy is published.
+*   `starts_asap` (`boolean`): Indicates if the job starts as soon as possible.
+*   `contract_type` (`integer`): Type of contract (e.g., permanent, fixed_term).
+*   `fixed_term_contract_duration` (`string`): Duration of a fixed-term contract.
+*   `personal_statement_guidance` (`text`): Guidance for writing a personal statement.
+*   `enable_job_applications` (`boolean`): Flag to enable in-platform job applications.
+*   `completed_steps` (`string[]`): `default: []`, `NOT NULL`, `array: true`. Tracks completed steps in the vacancy creation form.
+*   `actual_salary` (`string`): Detailed or specific salary figure.
+*   `working_patterns_details` (`text`): Additional details about working patterns.
+*   `key_stages` (`integer[]`): `array: true`. Array of applicable key stages.
+*   `geolocation` (`geography`): `limit: {srid: 4326, type: "geometry", geographic: true}`. Geographic coordinates of the primary job location, indexed (gist).
+*   `readable_phases` (`string[]`): `default: []`, `array: true`. Human-readable education phases.
+*   `searchable_content` (`tsvector`): For full-text search, indexed (gin).
+*   `google_index_removed` (`boolean`): `default: false`. Flag if removed from Google index.
+*   `parental_leave_cover_contract_duration` (`string`): Duration if it's a parental leave cover.
+*   `expired_vacancy_feedback_email_sent_at` (`datetime`): `precision: nil`. When feedback email for expired vacancy was sent.
+*   `external_source` (`string`): Source if imported externally (e.g., an ATS name), indexed.
+*   `external_reference` (`string`): Reference ID from the external source, indexed.
+*   `external_advert_url` (`string`): URL of the original advert on an external source.
+*   `ect_status` (`integer`): Suitability for Early Career Teachers (formerly NQTs).
+*   `pay_scale` (`string`): Pay scale for the role.
+*   `benefits` (`boolean`): Indicates if benefits are offered.
+*   `full_time_details` (`text`): Details if full-time.
+*   `part_time_details` (`text`): Details if part-time.
+*   `phases` (`integer[]`): `array: true`. Array of education phases.
+*   `start_date_type` (`integer`): Type of start date (e.g., specific_date, asap, other).
+*   `earliest_start_date` (`date`): Earliest possible start date.
+*   `latest_start_date` (`date`): Latest possible start date.
+*   `other_start_date_details` (`text`): Textual details for non-specific start dates.
+*   `receive_applications` (`integer`): How applications are received (e.g., email, website, internal).
+*   `application_email` (`string`): Email address for receiving applications.
+*   `school_visits` (`boolean`): Indicates if school visits are encouraged/possible.
+*   `contact_number_provided` (`boolean`): True if a contact number is provided.
+*   `skills_and_experience` (`string`): Required skills and experience.
+*   `school_offer` (`string`): What the school offers to the candidate.
+*   `safeguarding_information_provided` (`boolean`): True if safeguarding information is provided.
+*   `safeguarding_information` (`string`): Specific safeguarding information text.
+*   `further_details_provided` (`boolean`): True if further details are provided.
+*   `further_details` (`string`): Additional details for the vacancy.
+*   `include_additional_documents` (`boolean`): Flag to include additional documents.
+*   `visa_sponsorship_available` (`boolean`): Indicates if visa sponsorship is available.
+*   `is_parental_leave_cover` (`boolean`): True if this is a parental leave cover role.
+*   `hourly_rate` (`string`): Hourly rate if applicable.
+*   `is_job_share` (`boolean`): True if job share is an option.
+*   `flexi_working` (`string`): Details about flexible working arrangements.
+*   `extension_reason` (`integer`): Reason for extending a vacancy.
+*   `other_extension_reason_details` (`string`): Textual details for other extension reasons.
+*   `publisher_ats_api_client_id` (`uuid`): Foreign key to `publisher_ats_api_clients.id`, indexed. Identifies the ATS client if vacancy was posted via API.
+*   `religion_type` (`integer`): Religious character of the school/vacancy, if applicable.
+*   `flexi_working_details_provided` (`boolean`): True if flexible working details are provided.
+*   `discarded_at` (`datetime`): Timestamp if the vacancy was discarded (soft delete), indexed.
+
+#### 6.2.2 Jobseekers (`jobseekers`)
+Stores information about job-seeking users.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `email` (`string`): `default: ""`, `NOT NULL`, `indexed unique`. Jobseeker's email address.
+*   `sign_in_count` (`integer`): `default: 0`, `NOT NULL`. Number of times the jobseeker has signed in.
+*   `current_sign_in_at` (`datetime`): `precision: nil`. Timestamp of the current sign-in.
+*   `last_sign_in_at` (`datetime`): `precision: nil`. Timestamp of the last sign-in.
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+*   `account_closed_on` (`date`): Date when the account was closed.
+*   `current_sign_in_ip_ciphertext` (`text`): Encrypted field storing current sign-in IP. Actual data type before encryption is string.
+*   `last_sign_in_ip_ciphertext` (`text`): Encrypted field storing last sign-in IP. Actual data type before encryption is string.
+*   `govuk_one_login_id` (`string`): `indexed unique`. Unique identifier from GOV.UK One Login.
+*   `account_merge_confirmation_code` (`string`): Code used for merging accounts.
+*   `account_merge_confirmation_code_generated_at` (`datetime`): Timestamp when merge code was generated.
+*   `email_opt_out` (`boolean`): `default: false`, `NOT NULL`. Indicates if the jobseeker opted out of emails.
+*   `email_opt_out_reason` (`integer`): Reason for opting out of emails.
+*   `email_opt_out_comment` (`text`): Additional comment for opting out.
+
+#### 6.2.3 Publishers (`publishers`)
+Stores information about users who publish vacancies (school/trust staff).
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `oid` (`string`): `indexed unique`. Unique identifier from DfE Sign-in.
+*   `accepted_terms_at` (`datetime`): `precision: nil`. Timestamp when the publisher accepted terms and conditions.
+*   `email` (`string`): `indexed`. Publisher's email address.
+*   `last_activity_at` (`datetime`): `precision: nil`. Timestamp of the publisher's last activity.
+*   `created_at` (`datetime`): Timestamp of creation.
+*   `updated_at` (`datetime`): Timestamp of last update.
+*   `family_name_ciphertext` (`text`): Encrypted field storing family name. Actual data type before encryption is string.
+*   `given_name_ciphertext` (`text`): Encrypted field storing given name. Actual data type before encryption is string.
+*   `dismissed_new_features_page_at` (`datetime`): `precision: nil`. Timestamp when new features page was dismissed.
+*   `unsubscribed_from_expired_vacancy_prompt_at` (`datetime`): `precision: nil`. Timestamp when unsubscribed from expired vacancy prompts.
+*   `acknowledged_candidate_profiles_interstitial` (`boolean`): `default: false`, `NOT NULL`. Flag indicating if the publisher acknowledged the candidate profiles interstitial.
+
+#### 6.2.4 Organisations (`organisations`)
+Stores information about schools, trusts, and local authorities.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `type` (`string`): `indexed`. Type of organisation (e.g., School, SchoolGroup, LocalAuthority).
+*   `name` (`string`): Name of the organisation.
+*   `description` (`text`): Description of the organisation.
+*   `urn` (`string`): `indexed unique`. Unique Reference Number (for schools).
+*   `uid` (`string`): `indexed unique`. Unique Identifier (for trusts/LAs).
+*   `phase` (`integer`): Education phase (e.g., primary, secondary).
+*   `url` (`string`): Website URL of the organisation.
+*   `minimum_age` (`integer`): Minimum age of pupils.
+*   `maximum_age` (`integer`): Maximum age of pupils.
+*   `address` (`string`): Street address.
+*   `town` (`string`): Town or city.
+*   `county` (`string`): County.
+*   `postcode` (`string`): Postcode.
+*   `locality` (`text`): Locality.
+*   `address3` (`text`): Additional address line.
+*   `gias_data` (`json`): Raw data imported from GIAS.
+*   `created_at` (`datetime`): `precision: nil`, `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `precision: nil`, `NOT NULL`. Timestamp of last update.
+*   `url_override` (`string`): Overridden website URL.
+*   `region` (`string`): Region of the organisation.
+*   `detailed_school_type` (`string`): Detailed school type from GIAS.
+*   `school_type` (`string`): General school type from GIAS.
+*   `local_authority_code` (`string`): `indexed unique`. Local authority code.
+*   `group_type` (`string`): Type of group (e.g., Multi-academy trust).
+*   `local_authority_within` (`string`): Name of the local authority the organisation is within.
+*   `establishment_status` (`string`): Establishment status (e.g., Open, Closed).
+*   `geopoint` (`geography`): `limit: {srid: 4326, type: "st_point", geographic: true}`, `indexed (gist)`. Geographic coordinates of the organisation.
+*   `gias_data_hash` (`text`): Hash of GIAS data for detecting changes.
+*   `slug` (`string`): `indexed unique`. URL-friendly identifier.
+*   `email` (`string`): Contact email for the organisation.
+*   `safeguarding_information` (`string`): Default safeguarding information text.
+*   `searchable_content` (`tsvector`): For full-text search, indexed (gin).
+
+#### 6.2.5 Job Applications (`job_applications`)
+Stores applications submitted by jobseekers for vacancies.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `status` (`integer`): Current status of the application (e.g., draft, submitted, shortlisted).
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+*   `jobseeker_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `jobseekers.id`.
+*   `vacancy_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `vacancies.id`.
+*   `completed_steps` (`integer[]`): `default: []`, `NOT NULL`, `array: true`. Tracks completed steps in the application form.
+*   `submitted_at` (`datetime`): `precision: nil`. Timestamp when the application was submitted.
+*   `draft_at` (`datetime`): `precision: nil`. Timestamp when the application was last saved as draft.
+*   `shortlisted_at` (`datetime`): `precision: nil`. Timestamp when the application was shortlisted.
+*   `unsuccessful_at` (`datetime`): `precision: nil`. Timestamp when the application was marked unsuccessful.
+*   `withdrawn_at` (`datetime`): `precision: nil`. Timestamp when the application was withdrawn by the jobseeker.
+*   `qualified_teacher_status` (`string`): `default: ""`, `NOT NULL`. Jobseeker's QTS status.
+*   `qualified_teacher_status_year` (`string`): `default: ""`, `NOT NULL`. Year QTS was obtained.
+*   `qualified_teacher_status_details` (`text`): `default: ""`, `NOT NULL`. Details about QTS.
+*   `disability` (`string`): `default: ""`, `NOT NULL`. Disability information (Equal Ops).
+*   `gender` (`string`): `default: ""`, `NOT NULL`. Gender information (Equal Ops).
+*   `gender_description` (`string`): `default: ""`, `NOT NULL`. Other gender description (Equal Ops).
+*   `orientation` (`string`): `default: ""`, `NOT NULL`. Sexual orientation (Equal Ops).
+*   `orientation_description` (`string`): `default: ""`, `NOT NULL`. Other orientation description (Equal Ops).
+*   `ethnicity` (`string`): `default: ""`, `NOT NULL`. Ethnicity (Equal Ops).
+*   `ethnicity_description` (`string`): `default: ""`, `NOT NULL`. Other ethnicity description (Equal Ops).
+*   `religion` (`string`): `default: ""`, `NOT NULL`. Religion (Equal Ops).
+*   `religion_description` (`string`): `default: ""`, `NOT NULL`. Other religion description (Equal Ops).
+*   `reviewed_at` (`datetime`): `precision: nil`. Timestamp when the application was reviewed by a publisher.
+*   `country` (`string`): `default: ""`, `NOT NULL`. Country of residence.
+*   `age` (`string`): `default: ""`, `NOT NULL`. Age bracket (Equal Ops).
+*   `email_address` (`string`): `default: ""`, `NOT NULL`. Jobseeker's email at time of application.
+*   `withdrawn_by_closing_account` (`boolean`): `default: false`, `NOT NULL`. If application was withdrawn due to account closure.
+*   `first_name_ciphertext` (`text`): Encrypted field storing first name. Actual data type before encryption: string.
+*   `last_name_ciphertext` (`text`): Encrypted field storing last name. Actual data type before encryption: string.
+*   `previous_names_ciphertext` (`text`): Encrypted field storing previous names. Actual data type before encryption: string.
+*   `street_address_ciphertext` (`text`): Encrypted field storing street address. Actual data type before encryption: string.
+*   `city_ciphertext` (`text`): Encrypted field storing city. Actual data type before encryption: string.
+*   `postcode_ciphertext` (`text`): Encrypted field storing postcode. Actual data type before encryption: string.
+*   `phone_number_ciphertext` (`text`): Encrypted field storing phone number. Actual data type before encryption: string.
+*   `teacher_reference_number_ciphertext` (`text`): Encrypted field storing TRN. Actual data type before encryption: string.
+*   `national_insurance_number_ciphertext` (`text`): Encrypted field storing NIN. Actual data type before encryption: string.
+*   `personal_statement_ciphertext` (`text`): Encrypted field storing personal statement. Actual data type before encryption: text.
+*   `support_needed_details_ciphertext` (`text`): Encrypted field storing support needs details. Actual data type before encryption: text.
+*   `close_relationships_details_ciphertext` (`text`): Encrypted field storing close relationships details. Actual data type before encryption: text.
+*   `further_instructions_ciphertext` (`text`): Encrypted field storing further instructions. Actual data type before encryption: text.
+*   `rejection_reasons_ciphertext` (`text`): Encrypted field storing rejection reasons. Actual data type before encryption: text.
+*   `gaps_in_employment_details_ciphertext` (`text`): Encrypted field storing employment gap details. Actual data type before encryption: text.
+*   `in_progress_steps` (`integer[]`): `default: []`, `NOT NULL`, `array: true`. Tracks application steps currently in progress.
+*   `safeguarding_issue_details` (`text`): Details of any safeguarding issues declared.
+*   `imported_steps` (`integer[]`): `default: []`, `NOT NULL`, `array: true`. Tracks steps imported from jobseeker profile.
+*   `interviewing_at` (`datetime`): Timestamp for interview if scheduled.
+*   `statutory_induction_complete_details` (`string`): Details if statutory induction is complete.
+*   `following_religion` (`boolean`): Indicates if the applicant follows a religion (for faith schools).
+*   `religious_reference_type` (`integer`): Type of religious reference provided.
+*   `faith_ciphertext` (`string`): Encrypted field storing faith details. Actual data type before encryption: string.
+*   `place_of_worship_ciphertext` (`string`): Encrypted field storing place of worship. Actual data type before encryption: string.
+*   `religious_referee_name_ciphertext` (`string`): Encrypted field storing religious referee's name. Actual data type before encryption: string.
+*   `religious_referee_address_ciphertext` (`string`): Encrypted field storing religious referee's address. Actual data type before encryption: text.
+*   `religious_referee_role_ciphertext` (`string`): Encrypted field storing religious referee's role. Actual data type before encryption: string.
+*   `religious_referee_email_ciphertext` (`string`): Encrypted field storing religious referee's email. Actual data type before encryption: string.
+*   `religious_referee_phone_ciphertext` (`string`): Encrypted field storing religious referee's phone. Actual data type before encryption: string.
+*   `baptism_address_ciphertext` (`string`): Encrypted field storing baptism address. Actual data type before encryption: text.
+*   `baptism_date_ciphertext` (`string`): Encrypted field storing baptism date. Actual data type before encryption: string.
+*   `ethos_and_aims_ciphertext` (`string`): Encrypted field storing ethos and aims statement. Actual data type before encryption: text.
+*   `working_patterns` (`integer[]`): `array: true`. Jobseeker's preferred working patterns for this application.
+*   `working_pattern_details` (`string`): Details about working pattern preferences.
+*   `qts_age_range_and_subject` (`string`): QTS age range and subject details.
+*   `is_statutory_induction_complete` (`boolean`): Is statutory induction complete.
+*   `is_support_needed` (`boolean`): Is support needed.
+*   `has_close_relationships` (`boolean`): Any close relationships.
+*   `has_right_to_work_in_uk` (`boolean`): Right to work in UK status.
+*   `has_safeguarding_issue` (`boolean`): Any safeguarding issues declared.
+
+#### 6.2.6 Jobseeker Profiles (`jobseeker_profiles`)
+Stores extended profile information for jobseekers.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+*   `jobseeker_id` (`uuid`): `NOT NULL`, `indexed unique`. Foreign key to `jobseekers.id`.
+*   `about_you` (`string`): A short bio or summary about the jobseeker.
+*   `qualified_teacher_status` (`integer`): Jobseeker's QTS status.
+*   `qualified_teacher_status_year` (`string`): Year QTS was obtained.
+*   `active` (`boolean`): `default: false`, `NOT NULL`. Indicates if the profile is active and potentially visible to publishers.
+*   `requested_hidden_profile` (`boolean`): If the jobseeker has requested their profile to be hidden.
+*   `teacher_reference_number_ciphertext` (`text`): Encrypted field storing TRN. Actual data type before encryption: string.
+*   `statutory_induction_complete_details` (`string`): Details if statutory induction is complete.
+*   `qts_age_range_and_subject` (`string`): QTS age range and subject details.
+*   `qualified_teacher_status_details` (`text`): Further details about QTS.
+*   `is_statutory_induction_complete` (`boolean`): Is statutory induction complete.
+
+#### 6.2.7 Job Preferences (`job_preferences`)
+Stores job preferences for jobseekers, used for job alerts and potentially tailoring search.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `roles` (`string[]`): `default: []`, `array: true`. Preferred job roles.
+*   `phases` (`string[]`): `default: []`, `array: true`. Preferred education phases.
+*   `key_stages` (`string[]`): `default: []`, `array: true`. Preferred key stages.
+*   `subjects` (`string[]`): `default: []`, `array: true`. Preferred subjects.
+*   `working_patterns` (`string[]`): `default: []`, `array: true`. Preferred working patterns.
+*   `completed_steps` (`json`): `default: {}`. Tracks completed steps in the preference builder form.
+*   `builder_completed` (`boolean`): `default: false`, `NOT NULL`. Indicates if the preference builder was completed.
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+*   `jobseeker_profile_id` (`uuid`): `NOT NULL`, `indexed unique`. Foreign key to `jobseeker_profiles.id`.
+*   `working_pattern_details` (`string`): Additional details about working pattern preferences.
+
+#### 6.2.8 Job Preferences Locations (`job_preferences_locations`)
+Stores preferred locations and radii for job preferences.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `job_preferences_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `job_preferences.id`.
+*   `name` (`string`): `NOT NULL`. Name of the location (e.g., town, postcode).
+*   `radius` (`integer`): `NOT NULL`. Search radius around the location in miles.
+*   `area` (`geography`): `limit: {srid: 4326, type: "geometry", geographic: true}`, `NOT NULL`, `indexed (gist)`. Geographic area representing the location preference.
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+
+#### 6.2.9 Employments (`employments`)
+Stores employment history for job applications or jobseeker profiles.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `subjects` (`string`): `default: ""`, `NOT NULL`. Subjects taught or related to the role.
+*   `started_on` (`date`): Start date of employment.
+*   `ended_on` (`date`): End date of employment.
+*   `job_application_id` (`uuid`): `indexed`. Foreign key to `job_applications.id` (if part of an application).
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+*   `organisation_ciphertext` (`text`): Encrypted field storing organisation name. Actual data type before encryption: string.
+*   `job_title_ciphertext` (`text`): Encrypted field storing job title. Actual data type before encryption: string.
+*   `main_duties_ciphertext` (`text`): Encrypted field storing main duties. Actual data type before encryption: text.
+*   `employment_type` (`integer`): `default: 0`. Type of employment (e.g., job, break).
+*   `reason_for_break` (`text`): `default: ""`. Reason for a break in employment.
+*   `jobseeker_profile_id` (`uuid`): `indexed`. Foreign key to `jobseeker_profiles.id` (if part of a profile).
+*   `reason_for_leaving` (`text`): Reason for leaving the employment.
+*   `is_current_role` (`boolean`): `default: false`, `NOT NULL`. Indicates if this is the current role.
+
+#### 6.2.10 Qualifications (`qualifications`)
+Stores educational qualifications for job applications or jobseeker profiles.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+*   `category` (`integer`): Category of qualification (e.g., degree, A-level, GCSE).
+*   `finished_studying` (`boolean`): Indicates if studying for this qualification is finished.
+*   `grade` (`string`): `default: ""`, `NOT NULL`. Grade obtained.
+*   `institution` (`string`): `default: ""`, `NOT NULL`. Awarding institution.
+*   `name` (`string`): `default: ""`, `NOT NULL`. Name of the qualification.
+*   `subject` (`string`): `default: ""`, `NOT NULL`. Subject of the qualification.
+*   `year` (`integer`): Year qualification was obtained/expected.
+*   `job_application_id` (`uuid`): `indexed`. Foreign key to `job_applications.id`.
+*   `finished_studying_details_ciphertext` (`text`): Encrypted field storing details if not finished studying. Actual data type before encryption: text.
+*   `jobseeker_profile_id` (`uuid`): `indexed`. Foreign key to `jobseeker_profiles.id`.
+*   `awarding_body` (`string`): Name of the awarding body.
+*   `month` (`integer`): Month qualification was obtained/expected.
+
+#### 6.2.11 Qualification Results (`qualification_results`)
+Stores individual subject results for a qualification (e.g. GCSE subjects and grades).
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `qualification_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `qualifications.id`.
+*   `subject` (`string`): `NOT NULL`. Subject name.
+*   `grade` (`string`): `NOT NULL`. Grade achieved for the subject.
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+*   `awarding_body` (`string`): Awarding body for this specific result (if different from parent qualification).
+
+#### 6.2.12 Personal Details (`personal_details`)
+Stores personal details as part of a Jobseeker's profile.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `jobseeker_profile_id` (`uuid`): `NOT NULL`, `indexed unique`. Foreign key to `jobseeker_profiles.id`.
+*   `phone_number_provided` (`boolean`): Flag indicating if phone number is provided.
+*   `completed_steps` (`json`): `default: {}`, `NOT NULL`. Tracks completed steps in the personal details form.
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+*   `first_name_ciphertext` (`text`): Encrypted field storing first name. Actual data type before encryption: string.
+*   `last_name_ciphertext` (`text`): Encrypted field storing last name. Actual data type before encryption: string.
+*   `phone_number_ciphertext` (`text`): Encrypted field storing phone number. Actual data type before encryption: string.
+*   `has_right_to_work_in_uk` (`boolean`): Indicates if the jobseeker has the right to work in the UK.
+
+#### 6.2.13 References (`references`)
+Stores referee details for job applications.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `relationship` (`string`): `default: ""`, `NOT NULL`. Relationship of the referee to the applicant.
+*   `job_application_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `job_applications.id`.
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+*   `name_ciphertext` (`text`): Encrypted field storing referee's name. Actual data type before encryption: string.
+*   `job_title_ciphertext` (`text`): Encrypted field storing referee's job title. Actual data type before encryption: string.
+*   `organisation_ciphertext` (`text`): Encrypted field storing referee's organisation. Actual data type before encryption: string.
+*   `email_ciphertext` (`text`): Encrypted field storing referee's email. Actual data type before encryption: string.
+*   `phone_number_ciphertext` (`text`): Encrypted field storing referee's phone number. Actual data type before encryption: string.
+*   `is_most_recent_employer` (`boolean`): Indicates if this referee is from the most recent employer.
+
+#### 6.2.14 Subscriptions (Job Alerts) (`subscriptions`)
+Stores job alert subscriptions created by jobseekers or anonymous users.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `email` (`string`): `indexed`. Email address for receiving alerts.
+*   `frequency` (`integer`): Frequency of alerts (e.g., daily).
+*   `search_criteria` (`jsonb`): Stores the search criteria for the alert as JSON.
+*   `created_at` (`datetime`): `precision: nil`, `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `precision: nil`, `NOT NULL`. Timestamp of last update.
+*   `recaptcha_score` (`float`): Score from reCAPTCHA validation.
+*   `active` (`boolean`): `default: true`. Indicates if the subscription is active.
+*   `unsubscribed_at` (`datetime`): `precision: nil`. Timestamp when unsubscribed.
+
+#### 6.2.15 Alert Runs (`alert_runs`)
+Tracks the execution of job alerts.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `subscription_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `subscriptions.id`.
+*   `run_on` (`date`): `indexed`. Date the alert was run.
+*   `job_id` (`string`): Identifier for the background job that processed the alert.
+*   `created_at` (`datetime`): `precision: nil`, `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `precision: nil`, `NOT NULL`. Timestamp of last update.
+*   `status` (`integer`): `default: 0`. Status of the alert run (e.g., processed, failed).
+
+#### 6.2.16 Feedbacks (`feedbacks`)
+Stores user feedback on various aspects of the service.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+*   `feedback_type` (`integer`): Type of feedback (e.g., general, job_alert, vacancy).
+*   `rating` (`integer`): User rating (e.g., 1-5 stars).
+*   `comment` (`text`): User's textual feedback.
+*   `recaptcha_score` (`float`): Score from reCAPTCHA validation.
+*   `relevant_to_user` (`boolean`): If the feedback context was relevant to the user.
+*   `search_criteria` (`jsonb`): Search criteria at the time of feedback, if applicable.
+*   `job_alert_vacancy_ids` (`uuid[]`): `array: true`. Vacancy IDs related to job alert feedback.
+*   `unsubscribe_reason` (`integer`): Reason for unsubscribing from alerts.
+*   `other_unsubscribe_reason_comment` (`text`): Comment for 'other' unsubscribe reason.
+*   `email` (`string`): User's email, if provided.
+*   `user_participation_response` (`integer`): Response to user research participation request.
+*   `visit_purpose` (`integer`): Purpose of the user's visit.
+*   `visit_purpose_comment` (`text`): Comment for 'other' visit purpose.
+*   `job_application_id` (`uuid`): `indexed`. Foreign key to `job_applications.id`, if feedback relates to an application.
+*   `jobseeker_id` (`uuid`): `indexed`. Foreign key to `jobseekers.id`, if feedback from a jobseeker.
+*   `publisher_id` (`uuid`): `indexed`. Foreign key to `publishers.id`, if feedback from a publisher.
+*   `subscription_id` (`uuid`): `indexed`. Foreign key to `subscriptions.id`, if feedback relates to a job alert.
+*   `vacancy_id` (`uuid`): `indexed`. Foreign key to `vacancies.id`, if feedback relates to a vacancy.
+*   `close_account_reason` (`integer`): Reason for closing an account.
+*   `close_account_reason_comment` (`text`): Comment for 'other' account closure reason.
+*   `category` (`string`): Feedback category (e.g., general, vacancy, job alert).
+*   `occupation` (`text`): User's occupation (for survey-type feedback).
+*   `origin_path` (`string`): The path from which the feedback was submitted.
+*   `job_found_unsubscribe_reason_comment` (`text`): Comment if unsubscribed because job was found.
+
+#### 6.2.17 Notes (`notes`)
+Stores internal notes, typically made by publishers on job applications.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `content` (`string`): Text content of the note.
+*   `publisher_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `publishers.id`.
+*   `job_application_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `job_applications.id`.
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+
+#### 6.2.18 Equal Opportunities Reports (`equal_opportunities_reports`)
+Stores aggregated, anonymized equal opportunities data for vacancies.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `vacancy_id` (`uuid`): `NOT NULL`, `indexed unique`. Foreign key to `vacancies.id`.
+*   `total_submissions` (`integer`): `default: 0`, `NOT NULL`. Total applications contributing to this report.
+*   `disability_no` (`integer`): `default: 0`, `NOT NULL`. Count for 'no' disability.
+*   `disability_prefer_not_to_say` (`integer`): `default: 0`, `NOT NULL`. Count for 'prefer not to say' disability.
+*   `disability_yes` (`integer`): `default: 0`, `NOT NULL`. Count for 'yes' disability.
+*   *(Numerous other columns for gender, orientation, ethnicity, religion, and age categories, all `integer`, `default: 0`, `NOT NULL`.)*
+*   `gender_other_descriptions` (`string[]`): `default: []`, `NOT NULL`, `array: true`. Array of 'other' gender descriptions.
+*   `orientation_other_descriptions` (`string[]`): `default: []`, `NOT NULL`, `array: true`. Array of 'other' orientation descriptions.
+*   `ethnicity_other_descriptions` (`string[]`): `default: []`, `NOT NULL`, `array: true`. Array of 'other' ethnicity descriptions.
+*   `religion_other_descriptions` (`string[]`): `default: []`, `NOT NULL`, `array: true`. Array of 'other' religion descriptions.
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+
+#### 6.2.19 Organisation Vacancies (`organisation_vacancies`)
+Join table linking vacancies to one or more organisations (e.g., schools within a MAT).
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `organisation_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `organisations.id`.
+*   `vacancy_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `vacancies.id`.
+*   `created_at` (`datetime`): Timestamp of creation.
+*   `updated_at` (`datetime`): Timestamp of last update.
+*   _Indexes ensure uniqueness of `organisation_id` and `vacancy_id` pairs._
+
+#### 6.2.20 Organisation Publishers (`organisation_publishers`)
+Join table linking publishers to the organisations they belong to.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `organisation_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `organisations.id`.
+*   `publisher_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `publishers.id`.
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+
+#### 6.2.21 School Group Memberships (`school_group_memberships`)
+Join table linking schools to school groups (e.g., MATs).
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `school_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `organisations.id` (where type is School).
+*   `school_group_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `organisations.id` (where type is SchoolGroup).
+*   `do_not_delete` (`boolean`): Flag to prevent deletion.
+*   `created_at` (`datetime`): Timestamp of creation.
+*   `updated_at` (`datetime`): Timestamp of last update.
+*   _Indexes ensure uniqueness of `school_id` and `school_group_id` pairs._
+
+#### 6.2.22 Local Authority Publisher Schools (`local_authority_publisher_schools`)
+Join table linking publisher preferences (specifically for LAs) to individual schools.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `publisher_preference_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `publisher_preferences.id`.
+*   `school_id` (`uuid`): `NOT NULL`. Foreign key to `organisations.id` (representing a school).
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+
+#### 6.2.23 Publisher Preferences (`publisher_preferences`)
+Stores preferences for publishers, particularly which organisation(s) they are acting on behalf of.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `publisher_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `publishers.id`.
+*   `organisation_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `organisations.id`.
+*   `created_at` (`datetime`): Timestamp of creation.
+*   `updated_at` (`datetime`): Timestamp of last update.
+
+#### 6.2.24 Markers (`markers`)
+Stores geographic points for vacancies associated with organisations, likely for map displays.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `vacancy_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `vacancies.id`.
+*   `organisation_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `organisations.id`.
+*   `geopoint` (`geography`): `limit: {srid: 4326, type: "st_point", geographic: true}`, `indexed (gist)`. Geographic coordinates.
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+
+#### 6.2.25 Location Polygons (`location_polygons`)
+Stores geographic polygon data for locations (e.g., counties, cities), used in location-based search.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `name` (`string`): `NOT NULL`, `indexed`. Name of the location (e.g., "Essex").
+*   `location_type` (`string`): Type of location (e.g., "county").
+*   `created_at` (`datetime`): `precision: nil`, `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `precision: nil`, `NOT NULL`. Timestamp of last update.
+*   `area` (`geography`): `limit: {srid: 4326, type: "geometry", geographic: true}`, `indexed (gist)`. The polygon data.
+*   `centroid` (`geography`): `limit: {srid: 4326, type: "st_point", geographic: true}`, `indexed (gist)`. Centroid of the polygon.
+
+#### 6.2.26 Emergency Login Keys (`emergency_login_keys`)
+Stores temporary keys for emergency login, associated polymorphically with Jobseekers or Publishers.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `not_valid_after` (`datetime`): `precision: nil`, `NOT NULL`. Expiry timestamp for the key.
+*   `created_at` (`datetime`): `precision: nil`, `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `precision: nil`, `NOT NULL`. Timestamp of last update.
+*   `owner_type` (`string`): `NOT NULL`, `indexed with owner_id`. Polymorphic owner type (e.g., "Jobseeker", "Publisher").
+*   `owner_id` (`uuid`): `NOT NULL`, `indexed with owner_type`. Polymorphic owner ID.
+
+#### 6.2.27 Publisher ATS API Clients (`publisher_ats_api_clients`)
+Stores credentials for third-party Applicant Tracking Systems using the Publisher API.
+*   `id` (`uuid`): `NOT NULL`, `default: -> { "gen_random_uuid()" }`. Primary key.
+*   `name` (`string`): `NOT NULL`. Name of the API client/provider.
+*   `api_key` (`string`): `NOT NULL`. The API key for authentication.
+*   `last_rotated_at` (`datetime`): `NOT NULL`. Timestamp when the API key was last rotated.
+*   `created_at` (`datetime`): `NOT NULL`. Timestamp of creation.
+*   `updated_at` (`datetime`): `NOT NULL`. Timestamp of last update.
+
+#### 6.2.28 Active Storage Attachments (`active_storage_attachments`)
+Generic Rails Active Storage table for managing file attachments.
+*   **Purpose:** Links records (e.g., Vacancy, JobApplication, JobseekerProfile) to their uploaded files (blobs).
+*   `id` (`uuid`): Primary key.
+*   `name` (`string`): `NOT NULL`. Name of the attachment (e.g., `supporting_documents`, `cv`).
+*   `record_type` (`string`): `NOT NULL`, `indexed with record_id, name, blob_id`. The class name of the owning record (e.g., "Vacancy", "JobApplication").
+*   `record_id` (`uuid`): `NOT NULL`, `indexed with record_type, name, blob_id`. The ID of the owning record.
+*   `blob_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `active_storage_blobs.id`.
+*   `created_at` (`datetime`): `precision: nil`, `NOT NULL`.
+
+#### 6.2.29 Active Storage Blobs (`active_storage_blobs`)
+Generic Rails Active Storage table for storing metadata about uploaded files.
+*   **Purpose:** Stores metadata about each uploaded file (blob), such as filename, content type, and checksum. The actual file content is stored in the configured service (e.g., Azure Blob Storage).
+*   `id` (`uuid`): Primary key.
+*   `key` (`string`): `NOT NULL`, `indexed unique`. Unique key for the blob.
+*   `filename` (`string`): `NOT NULL`. Original filename of the uploaded file.
+*   `content_type` (`string`): MIME type of the file.
+*   `metadata` (`text`): Additional metadata (e.g., image dimensions).
+*   `service_name` (`string`): `NOT NULL`. Name of the Active Storage service used (e.g., `azure`).
+*   `byte_size` (`bigint`): `NOT NULL`. Size of the file in bytes.
+*   `checksum` (`string`): Checksum of the file content.
+*   `created_at` (`datetime`): `precision: nil`, `NOT NULL`.
+
+#### 6.2.30 Friendly ID Slugs (`friendly_id_slugs`)
+Generic table used by the `friendly_id` gem to create human-readable URL slugs for records (e.g., Vacancies, Organisations).
+*   **Purpose:** Stores historical and current slugs for records to maintain SEO-friendly URLs.
+*   `id` (`serial`): Primary key (integer).
+*   `slug` (`string`): `NOT NULL`, `indexed`. The URL-friendly slug.
+*   `sluggable_id` (`uuid`): `NOT NULL`, `indexed`. The ID of the record that owns the slug.
+*   `sluggable_type` (`string`): `limit: 50`, `indexed`. The class name of the record that owns the slug (e.g., "Vacancy").
+*   `scope` (`string`): `indexed`. Used if slugs are scoped (e.g., unique within a parent).
+*   `created_at` (`datetime`): `precision: nil`.
+
+#### 6.2.31 Sessions (`sessions`)
+Standard Rails table for storing user session data.
+*   **Purpose:** Manages user sessions for the web application.
+*   `id` (`serial`): Primary key (integer).
+*   `session_id` (`string`): `NOT NULL`, `indexed unique`. Unique ID for the session.
+*   `data` (`text`): Serialized session data.
+*   `created_at` (`datetime`): `precision: nil`, `NOT NULL`.
+*   `updated_at` (`datetime`): `precision: nil`, `NOT NULL`, `indexed`.
+
+#### 6.2.32 Versions (`versions`)
+Used by the `paper_trail` gem for tracking changes to models (auditing/versioning).
+*   **Purpose:** Stores historical versions of records (e.g., Vacancies) to enable auditing and rollbacks.
+*   `id` (`serial`): Primary key (integer).
+*   `item_type` (`string`): `NOT NULL`, `indexed with item_id`. The class name of the versioned item.
+*   `item_id` (`uuid`): `NOT NULL`, `indexed with item_type`. The ID of the versioned item.
+*   `event` (`string`): `NOT NULL`. The event that triggered the version (e.g., "create", "update", "destroy").
+*   `whodunnit` (`string`): Identifier for the user who made the change.
+*   `object` (`text`): Serialized representation of the item's state *before* the change.
+*   `created_at` (`datetime`): `precision: nil`. Timestamp of when the version was created.
+*   `object_changes` (`jsonb`): Stores a JSON representation of the changes made in this version.
+
+#### 6.2.33 Noticed Events (`noticed_events`)
+Part of the `noticed` gem, used for managing notifications.
+*   **Purpose:** Stores records of events that can trigger notifications.
+*   `id` (`uuid`): Primary key.
+*   `type` (`string`): Class name of the event.
+*   `record_type` (`string`): `indexed with record_id`. Polymorphic association to the record that caused the event (e.g., a new `JobApplication`).
+*   `record_id` (`uuid`): `indexed with record_type`. ID of the record that caused the event.
+*   `params` (`jsonb`): Additional parameters associated with the event.
+*   `created_at` (`datetime`): `NOT NULL`.
+*   `updated_at` (`datetime`): `NOT NULL`.
+*   `notifications_count` (`integer`): Counter cache for associated notifications.
+
+#### 6.2.34 Noticed Notifications (`noticed_notifications`)
+Part of the `noticed` gem, stores individual notifications generated by events.
+*   **Purpose:** Represents a specific notification sent to a recipient.
+*   `id` (`uuid`): Primary key.
+*   `type` (`string`): Class name of the notification.
+*   `event_id` (`uuid`): `NOT NULL`, `indexed`. Foreign key to `noticed_events.id`.
+*   `recipient_type` (`string`): `NOT NULL`, `indexed with recipient_id`. Polymorphic association to the recipient (e.g., "Jobseeker", "Publisher").
+*   `recipient_id` (`uuid`): `NOT NULL`, `indexed with recipient_type`. ID of the recipient.
+*   `read_at` (`datetime`): `precision: nil`. Timestamp when the notification was marked as read.
+*   `seen_at` (`datetime`): `precision: nil`. Timestamp when the notification was seen (e.g., displayed in a UI).
+*   `created_at` (`datetime`): `NOT NULL`.
+*   `updated_at` (`datetime`): `NOT NULL`.
+
 ### 6.3 Data Retention and Archival
+*(This section will detail policies and requirements for data retention, archival, and deletion, in compliance with GDPR and DfE policies.)*
 
 ## 7. Use Cases
 
