@@ -1720,7 +1720,6 @@ The Teaching Vacancies service implements data retention and deletion policies t
     *   This updated information MAY be used to pre-fill future job applications made through the platform.
     *   If account deletion was requested, the account and associated data are scheduled for deletion or anonymization according to system policies.
 
-### 7.6 UC-006: Jobseeker Manages Personal Profile
 ### 7.7 UC-007: Support User Manages User Feedback
 *   **Actor:** Support User (DfE Staff with appropriate permissions).
 *   **Scope:** Viewing, filtering, and potentially actioning user-submitted feedback regarding the Teaching Vacancies service.
