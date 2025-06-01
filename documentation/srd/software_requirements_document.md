@@ -91,9 +91,14 @@
   - [7.2 UC-002: Publisher Posts New Vacancy](#72-uc-002-publisher-posts-new-vacancy)
   - [7.3 UC-003: Jobseeker Applies for Vacancy](#73-uc-003-jobseeker-applies-for-vacancy)
   - [7.4 UC-004: Jobseeker Creates Job Alert](#74-uc-004-jobseeker-creates-job-alert)
-  - *(Others to be added)*
-- [Appendix A: Business Rules Catalogue (Placeholder)](#appendix-a-business-rules-catalogue-placeholder)
-- [Appendix B: Data Migration Considerations (Placeholder for Rewrite Context)](#appendix-b-data-migration-considerations-placeholder-for-rewrite-context)
+  - [7.5 UC-005: Publisher Manages Organisation Profile](#75-uc-005-publisher-manages-organisation-profile)
+  - [7.6 UC-006: Jobseeker Manages Personal Profile](#76-uc-006-jobseeker-manages-personal-profile)
+  - [7.7 UC-007: Support User Manages User Feedback](#77-uc-007-support-user-manages-user-feedback)
+  - [7.8 UC-008: Support User Manages Publisher ATS API Client](#78-uc-008-support-user-manages-publisher-ats-api-client)
+  - [7.9 UC-009: System Sends Job Alert Email to Jobseeker](#79-uc-009-system-sends-job-alert-email-to-jobseeker)
+  - [7.10 UC-010: System Exports Vacancies to DWP Find a Job](#710-uc-010-system-exports-vacancies-to-dwp-find-a-job)
+- [Appendix A: Business Rules Catalogue](#appendix-a-business-rules-catalogue)
+- [Appendix B: Data Migration Considerations](#appendix-b-data-migration-considerations)
 
 ## 1. Introduction
 
@@ -508,8 +513,14 @@ The Teaching Vacancies service provides distinct web-based user interfaces tailo
 *   **Description:** Vacancy data is exported to the Department for Work and Pensions' "Find a Job" service to reach a wider audience of jobseekers.
 *   **Interaction Protocol:** Daily XML bulk uploads via SFTP.
 #### 4.3.4 Publisher ATS API
-*   **Description:** An API provided by Teaching Vacancies to allow third-party Applicant Tracking Systems (ATS) used by schools/trusts to programmatically post and manage vacancies.
-*   **Interaction Protocol:** HTTPS/JSON. The API allows Applicant Tracking Systems to post and manage vacancies.
+*   **Description:** An API provided by Teaching Vacancies to allow third-party Applicant Tracking Systems (ATS) used by schools/trusts to programmatically manage vacancies on the Teaching Vacancies platform. This enables organisations to maintain their vacancy information within their chosen ATS as the primary source of truth, with changes automatically reflected on Teaching Vacancies.
+    *   The API supports operations such as:
+        *   Creating new vacancies.
+        *   Updating existing vacancies.
+        *   Closing vacancies.
+        *   Potentially retrieving information about vacancies posted via the ATS.
+    *   Vacancies managed via the ATS API are identifiable and may have different management rules within the publisher dashboard (e.g., limited direct editability on Teaching Vacancies).
+*   **Interaction Protocol:** HTTPS/JSON. Authentication is typically via API keys managed by Support Users.
 #### 4.3.5 Google Services (reCAPTCHA, Drive)
 *   **Description:** Integration with Google reCAPTCHA v3 for bot mitigation on public forms and Google Drive for temporary storage and virus scanning of uploaded documents.
 *   **Interaction Protocol (reCAPTCHA):** JavaScript integration on the client-side and server-side API calls for verification.
@@ -518,8 +529,8 @@ The Teaching Vacancies service provides distinct web-based user interfaces tailo
 *   **Description:** Used for sending all system-generated emails to users (e.g., job alerts, application confirmations, password resets for fallback authentication).
 *   **Interaction Protocol:** HTTPS/API for sending emails (and potentially SMS in the future).
 #### 4.3.7 ONS ArcGIS Service
-*   **Description:** Used to import geographical polygon data (e.g., for counties, cities) from the Office for National Statistics, which supports location-based searches.
-*   **Interaction Protocol:** HTTPS/API for data import (typically a scheduled background job).
+*   **Description:** The service imports geographical boundary data (polygons for administrative areas like counties, cities, regions) from the Office for National Statistics (ONS), likely sourced via their ArcGIS platform or open data portals. This imported polygon data (stored in `location_polygons` table) is crucial for supporting location-based searches that go beyond simple radius searches around a point. It allows users to search for vacancies within named geographical areas (e.g., "jobs in Essex"). The import process is typically a scheduled background job.
+*   **Interaction Protocol:** HTTPS/API for data import (e.g., fetching GeoJSON or similar GIS data formats).
 
 ### 4.4 Communications Interfaces
 This section details the communication protocols used by the Teaching Vacancies service for its external software interfaces and general web access.
@@ -1453,6 +1464,139 @@ The Teaching Vacancies service implements data retention and deletion policies t
 ### 7.2 UC-002: Publisher Posts New Vacancy
 ### 7.3 UC-003: Jobseeker Applies for Vacancy
 ### 7.4 UC-004: Jobseeker Creates Job Alert
-  - *(Others to be added)*
-- [Appendix A: Business Rules Catalogue (Placeholder)](#appendix-a-business-rules-catalogue-placeholder)
-- [Appendix B: Data Migration Considerations (Placeholder for Rewrite Context)](#appendix-b-data-migration-considerations-placeholder-for-rewrite-context)
+  - [7.5 UC-005: Publisher Manages Organisation Profile](#75-uc-005-publisher-manages-organisation-profile)
+  - [7.6 UC-006: Jobseeker Manages Personal Profile](#76-uc-006-jobseeker-manages-personal-profile)
+  - [7.7 UC-007: Support User Manages User Feedback](#77-uc-007-support-user-manages-user-feedback)
+  - [7.8 UC-008: Support User Manages Publisher ATS API Client](#78-uc-008-support-user-manages-publisher-ats-api-client)
+  - [7.9 UC-009: System Sends Job Alert Email to Jobseeker](#79-uc-009-system-sends-job-alert-email-to-jobseeker)
+  - [7.10 UC-010: System Exports Vacancies to DWP Find a Job](#710-uc-010-system-exports-vacancies-to-dwp-find-a-job)
+### 7.5 UC-005: Publisher Manages Organisation Profile
+### 7.6 UC-006: Jobseeker Manages Personal Profile
+### 7.7 UC-007: Support User Manages User Feedback
+### 7.8 UC-008: Support User Manages Publisher ATS API Client
+### 7.9 UC-009: System Sends Job Alert Email to Jobseeker
+### 7.10 UC-010: System Exports Vacancies to DWP Find a Job
+## Appendix A: Business Rules Catalogue
+This appendix lists key business rules identified throughout the document. These rules govern specific behaviors, constraints, and data validations within the Teaching Vacancies service. The IDs are assigned for traceability.
+
+**Authentication and Authorization (BR-AUTH)**
+*   **BR-AUTH-001:** Jobseeker fallback authentication (e.g., magic link) SHOULD require additional verification or have a limited session duration. (Derived from FR-JS-AUTH-005)
+*   **BR-AUTH-002:** A Publisher MUST be associated with at least one school, Multi-Academy Trust (MAT), or Local Authority (LA) to post vacancies. (Derived from FR-PUB-AUTH-002)
+*   **BR-AUTH-003:** Access rules for Publisher fallback authentication mechanisms NEED TO BE DEFINED. (Derived from FR-PUB-AUTH-005)
+*   **BR-AUTH-004:** Specific roles and permissions for Support Users NEED TO BE DEFINED (e.g., differentiating Level 1 and Level 2 support capabilities). (Derived from FR-SUP-AUTH-002)
+
+**Vacancy Management (BR-VAC)**
+*   **BR-VAC-001:** A Publisher MUST be associated with an active organisation to create a new job vacancy. (Derived from FR-PUB-VAC-C001)
+*   **BR-VAC-002:** The list of organisations a Publisher can select when creating a vacancy IS RESTRICTED to those the Publisher is actively associated with. (Derived from FR-PUB-VAC-DET-001)
+*   **BR-VAC-003:** At least one 'Job role' MUST be selected when creating a vacancy. (Derived from FR-PUB-VAC-DET-003)
+*   **BR-VAC-004:** At least one 'Working pattern' MUST be selected when creating a vacancy. (Derived from FR-PUB-VAC-DET-005)
+*   **BR-VAC-005:** The 'Closing date' for applications MUST be a future date. (Derived from FR-PUB-VAC-APP-004)
+*   **BR-VAC-006:** Uploaded supporting documents for vacancies MUST adhere to maximum file size and allowed file type restrictions (e.g., PDF, DOCX). All uploaded documents MUST be virus scanned. (Derived from FR-PUB-VAC-APP-008)
+*   **BR-VAC-007:** All mandatory fields across all steps of the vacancy creation process MUST be completed before a vacancy can be published. (Derived from FR-PUB-VAC-REV-003)
+*   **BR-VAC-008:** Certain fields in a vacancy MAY become uneditable after publication or once applications have been received. (Derived from FR-PUB-VAC-DASH-002)
+*   **BR-VAC-009:** Publisher confirmation IS REQUIRED before a vacancy can be ended early. (Derived from FR-PUB-VAC-DASH-004)
+*   **BR-VAC-010:** When extending a vacancy's closing date, the new closing date MUST be in the future. (Derived from FR-PUB-VAC-DASH-005)
+*   **BR-VAC-011:** The editability of vacancies originating from an Applicant Tracking System (ATS) within the Teaching Vacancies interface IS DETERMINED by the synchronization logic with the ATS, which is the system of record. (Derived from FR-PUB-VAC-ATS-002)
+
+**Job Search and Filtering (BR-SEARCH)**
+*   **BR-SEARCH-001:** Job search results MUST ONLY display vacancies that are 'published', 'not expired', and not 'closed_early'. (Derived from FR-JS-SEARCH-001)
+*   **BR-SEARCH-002:** The specific fields matched during a keyword search and their weighting ARE DEFINED by the search configuration (e.g., PostgreSQL full-text search settings). (Derived from FR-JS-KEY-002)
+*   **BR-SEARCH-003:** Postcode validation MUST use the standard UK postcode format. (Derived from FR-JS-LOC-002)
+*   **BR-SEARCH-004:** Location radius searches MUST use geospatial calculations (e.g., PostGIS `ST_DWithin`). (Derived from FR-JS-LOC-005)
+*   **BR-SEARCH-005:** Filter values for 'Job Role' in job searches ARE BASED ON a predefined list. (Derived from FR-JS-FILT-001)
+*   **BR-SEARCH-006:** Filter values for 'Education Phase' in job searches ARE BASED ON a predefined list. (Derived from FR-JS-FILT-002)
+*   **BR-SEARCH-007:** Filter values for 'Working Pattern' in job searches ARE BASED ON a predefined list. (Derived from FR-JS-FILT-003)
+*   **BR-SEARCH-008:** Filter values for 'Subject' in job searches ARE BASED ON a predefined list of subjects. (Derived from FR-JS-FILT-004)
+
+**Job Application Process (BR-APP)**
+*   **BR-APP-001:** A Jobseeker MUST be logged in to start an in-platform job application. (Derived from FR-JS-APP-002)
+*   **BR-APP-002:** A Jobseeker can only apply to a vacancy if it is currently accepting applications (i.e., status is 'published', and it is not expired or closed early). (Derived from FR-JS-APP-002)
+*   **BR-APP-003:** The specific fields included in the in-platform job application form ARE DEFINED by DfE policy and best practice. (Derived from FR-JS-APP-004)
+*   **BR-APP-004:** Supporting documents uploaded during an application MUST adhere to supported file type and size limits. All uploaded documents MUST be virus scanned. (Derived from FR-JS-APP-005)
+*   **BR-APP-005:** Specific conditions for when a Jobseeker can withdraw a submitted application NEED TO BE DEFINED. (Derived from FR-JS-APP-009)
+*   **BR-APP-006:** The available statuses for job applications and the valid transitions between these statuses (when managed by a Publisher) NEED TO BE DEFINED. (Derived from FR-PUB-APP-003)
+
+**Jobseeker Profile Management (BR-PROF)**
+*   **BR-PROF-001:** Supporting documents uploaded to a Jobseeker's profile MUST adhere to file type and size limits. All uploaded documents MUST be virus scanned. (Derived from FR-JS-PROF-006)
+
+**Publisher (Organisation) Profile Management (BR-ORG)**
+*   **BR-ORG-001:** Core organisation data (name, address, URN etc.) IS PRIMARILY SOURCED from GIAS and updated periodically. (Derived from FR-PUB-ORG-001)
+*   **BR-ORG-002:** A Publisher's permissions and the organisations they can manage ARE DERIVED from their DfE Sign-in roles and associated organisation URNs/UIDs. (Derived from FR-PUB-ORG-002)
+*   **BR-ORG-003:** The specific descriptive fields an organisation can edit on their Teaching Vacancies profile (that are not GIAS-sourced) NEED TO BE DEFINED. Core data from GIAS IS NOT directly editable by publishers through Teaching Vacancies. (Derived from FR-PUB-ORG-003)
+*   **BR-ORG-004:** A Publisher's ability to manage other users associated with their organisation(s) IS DEPENDENT on their DfE Sign-in roles and permissions. (Derived from FR-PUB-ORG-005)
+
+**Notifications and Alerts (BR-NOTIF)**
+*   **BR-NOTIF-001:** The frequency of job alert emails (e.g., daily, instant) IS EITHER configurable by the jobseeker or system-defined (e.g., a daily digest). (Derived from FR-JS-ALERT-003)
+
+**Support User Functions (BR-SUP)**
+*   **BR-SUP-001:** The export format and specific fields included in feedback data exports by Support Users NEED TO BE DEFINED, ensuring PII is handled appropriately. (Derived from FR-SUP-FDBK-007)
+*   **BR-SUP-002:** The process for approving and provisioning Publisher ATS API clients by Support Users NEEDS TO BE DEFINED. (Derived from FR-SUP-ATS-002)
+*   **BR-SUP-003:** The content and format of the downloadable Equal Opportunities Report ARE DEFINED by DfE policy. (Derived from FR-SUP-DATA-002)
+*   **BR-SUP-004:** Access to Jobseeker or Publisher PII by Support Users MUST be strictly controlled and all access MUST be logged. (Derived from FR-SUP-USER-001)
+*   **BR-SUP-005:** Support Users ARE PROHIBITED from directly changing user passwords. (Derived from FR-SUP-USER-002)
+
+**System Administration (BR-SYSADM)**
+*   **BR-SYSADM-001:** Application deployments ARE MANAGED via GitHub Actions workflows. (Derived from FR-SYSADM-DEPLOY-001)
+*   **BR-SYSADM-002:** Infrastructure IS MANAGED as code using Terraform. (Derived from FR-SYSADM-INFRA-001)
+*   **BR-SYSADM-003:** System monitoring IS ACHIEVED through integrated tools such as Sentry, Azure Monitor, and SemanticLogger outputs. (Derived from FR-SYSADM-MONITOR-001)
+*   **BR-SYSADM-004:** Database backups ARE AUTOMATED. Schema migrations ARE HANDLED via Rails' standard migration mechanism. (Derived from FR-SYSADM-DB-001)
+
+**Reporting and Analytics (BR-REP)**
+*   **BR-REP-001:** The primary platform for detailed analytics and reporting IS Google BigQuery, fed by DfE Analytics. (Derived from FR-REP-EXT-001 and ADR 0002)
+*   **BR-REP-002:** Equal Opportunities Reports generated from the application ARE BASED ON anonymized data from in-platform job applications for specific vacancies. (Derived from FR-REP-SUP-001)
+*   **BR-REP-003:** The exact metrics displayed on the Support User dashboard ARE DEFINED by the needs of the support team. (Derived from FR-REP-SUP-003)
+## Appendix B: Data Migration Considerations
+This appendix outlines key considerations for migrating data *from* the Teaching Vacancies service to another system or platform in a future scenario. This is not an exhaustive migration plan but highlights important aspects based on the current system's data structure and characteristics.
+
+**B.1 Core Data Entities for Migration**
+The following core data entities (detailed in Section 6.2) would typically be central to any data migration effort:
+
+*   **Organisations (`organisations`):** School, Trust, and LA data, including URNs/UIDs, contact details, and GIAS-sourced information. Maintaining links to GIAS as a master data source would be crucial.
+*   **Vacancies (`vacancies`):** All historical and current vacancy data, including job details, descriptions, application methods, key dates, and status. Slugs for SEO and `discarded_at` status for soft-deletions need careful handling.
+*   **Jobseekers (`jobseekers`):** User account information, including GOV.UK One Login identifiers.
+*   **Publishers (`publishers`):** User account information, including DfE Sign-in OIDs and links to organisations.
+*   **Job Applications (`job_applications`):** Data submitted by jobseekers for specific vacancies, including all form fields and references to uploaded documents. This is highly sensitive PII.
+*   **Jobseeker Profiles (`jobseeker_profiles`):** Including personal details, qualifications, employments, job preferences, and associated documents. Also sensitive PII.
+*   **Supporting Documents (via ActiveStorage):** All files uploaded by jobseekers (CVs, certificates) and publishers (vacancy supporting documents). Migration would involve extracting files from Azure Blob Storage and re-associating them in the new system.
+*   **Subscriptions (`subscriptions`):** Job alert criteria and associated email addresses.
+*   **Feedback (`feedbacks`):** User-submitted feedback.
+*   **Equal Opportunities Reports (`equal_opportunities_reports`):** Aggregated, anonymized data per vacancy.
+
+**B.2 Key Migration Challenges and Considerations**
+
+*   **Encrypted Data:** Numerous fields, particularly within `job_applications`, `jobseekers`, `publishers`, `employments`, `qualifications`, and `personal_details` tables, are encrypted at the application level (ciphertext columns).
+    *   **Consideration:** The encryption keys and mechanism used by the current Rails application would be required to decrypt this data for migration. The target system would need a strategy for re-encrypting this data using its own mechanisms or securely storing it.
+*   **Personally Identifiable Information (PII):** A significant portion of the data (especially Jobseeker and Job Application data) is PII and subject to GDPR.
+    *   **Consideration:** Extreme care must be taken during extraction, transformation, and loading to ensure data security, privacy, and compliance. Data minimization principles should be applied if migrating to a system with different scope.
+*   **Data Volume:** Over time, the volume of vacancies, applications, and user accounts can become substantial.
+    *   **Consideration:** Migration scripts and processes must be performant and potentially run in batches. Downtime for a "big bang" migration might be significant if not managed carefully.
+*   **Data Transformation:**
+    *   **Schema Mapping:** The target system may have a different database schema, requiring careful mapping of tables and columns.
+    *   **Data Type Conversion:** Data types may differ (e.g., for enums, arrays, JSONB fields like `search_criteria` in subscriptions).
+    *   **Business Logic Evolution:** If the target system has different business rules, data may need transformation to fit the new logic (e.g., how vacancy statuses or user roles are handled).
+*   **Referential Integrity:** The database uses foreign keys to maintain relationships (e.g., `vacancy_id` in `job_applications`).
+    *   **Consideration:** These relationships must be preserved or correctly re-established in the target system. UUIDs are used as primary keys, which can simplify migration compared to integer sequences if the target system also uses UUIDs.
+*   **Polymorphic Associations:** Some tables like `active_storage_attachments` (for documents) and `emergency_login_keys` use polymorphic associations (`record_type`, `record_id`).
+    *   **Consideration:** These need to be correctly mapped if the target system uses a different mechanism for such relationships.
+*   **External Identifiers:**
+    *   Jobseeker accounts are linked via `govuk_one_login_id`.
+    *   Publisher accounts are linked via DfE Sign-in `oid`.
+    *   Organisations are linked via `urn`, `uid`, `local_authority_code`.
+    *   **Consideration:** These external keys are vital for maintaining identity and links to external systems and must be preserved accurately.
+*   **Geospatial Data (`geolocation`, `area`, `centroid`):** Stored in PostGIS-specific `geography` types.
+    *   **Consideration:** The target system must support geospatial data types, or this data will need transformation (e.g., to WKT, GeoJSON, or separate latitude/longitude fields).
+*   **Full-Text Search Data (`searchable_content`):** The `tsvector` columns are specific to PostgreSQL's full-text search.
+    *   **Consideration:** This pre-computed search data would likely need to be rebuilt by the target system's search mechanism.
+*   **Versioned Data (`versions` table from PaperTrail):** Contains historical changes to records.
+    *   **Consideration:** Decide whether to migrate this audit history. If so, the target system would need a compatible way to store and interpret it, or it might be archived separately.
+*   **Active Data vs. Historical Data:**
+    *   **Consideration:** A decision might be needed on whether to migrate all historical data (e.g., very old expired vacancies or applications beyond retention policy, if they haven't been hard-deleted) or only active/recent data. This impacts migration complexity and volume. Data retention policies (Section 6.3) should inform this.
+*   **Testing and Validation:** Thorough testing and validation are critical to ensure all data is migrated accurately and completely, and that the target system functions correctly with the migrated data.
+
+**B.3 Data Extraction Strategy (High-Level)**
+*   Data would likely be extracted from the PostgreSQL database, possibly using SQL queries, database dumps (e.g., `pg_dump`), or custom scripts (e.g., Rake tasks designed for export).
+*   Uploaded files (ActiveStorage) would need to be copied from Azure Blob Storage.
+*   A phased approach (e.g., migrating users first, then organisations, then vacancies, then applications) might be considered for very large datasets to minimize downtime, but this adds complexity.
+*   Consideration should be given to a "delta" migration strategy if the source system needs to remain live during a prolonged migration period.
+
+This appendix serves as a starting point for more detailed planning if a data migration project from Teaching Vacancies is ever undertaken.
