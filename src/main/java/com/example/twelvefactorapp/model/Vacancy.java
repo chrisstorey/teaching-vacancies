@@ -2,7 +2,7 @@ package com.example.twelvefactorapp.model;
 
 import com.example.twelvefactorapp.model.converter.WorkingPatternsConverter;
 import com.example.twelvefactorapp.model.enums.ContractType;
-// import com.example.twelvefactorapp.model.enums.KeyStage; // Keep if keyStages is also being converted, remove if not used
+import com.example.twelvefactorapp.model.enums.VacancyStatus; // Added
 import com.example.twelvefactorapp.model.enums.WorkingPattern;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.locationtech.jts.geom.Point; // Import for JTS Point
+import org.locationtech.jts.geom.Point;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
@@ -55,13 +55,14 @@ public class Vacancy {
     private ContractType contractType;
 
     @Convert(converter = WorkingPatternsConverter.class)
-    @Column(name = "working_patterns") // Assumes this column stores data like "FULL_TIME,PART_TIME"
-    private List<WorkingPattern> workingPatterns; // Changed from List<String>
+    @Column(name = "working_patterns")
+    private List<WorkingPattern> workingPatterns;
 
-    @Column(name = "key_stages") // TODO: Map to List<KeyStage> with custom converter if needed (similar to working_patterns)
-    @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY) // Keeping this as is, per original request to only change working_patterns
+    // 'key_stages' from DTO, maps to 'phases' in DTO. Assuming 'keyStages' is the existing field.
+    @Column(name = "key_stages") 
+    @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY)
     @CollectionTable(name = "vacancy_key_stages", joinColumns = @JoinColumn(name = "vacancy_id"))
-    private List<String> keyStages;
+    private List<String> keyStages; // This will be mapped to 'phases' in DTO
 
     @Column(name = "publish_on")
     private LocalDate publishOn;
@@ -73,16 +74,16 @@ public class Vacancy {
     private LocalDate startsOn;
 
     @Column(name = "contact_email")
-    private String contactEmail; // TODO: If this were an encrypted field in Rails, add: Handle Rails-compatible encryption/decryption or re-encryption strategy.
+    private String contactEmail;
 
     @Column(name = "contact_number")
     private String contactNumber;
 
-    @Column(name = "geolocation", columnDefinition = "geometry(Point,4326)") // Standard PostGIS type with SRID 4326 for WGS84
-    private Point geolocation; // Changed from String to org.locationtech.jts.geom.Point
+    @Column(name = "geolocation", columnDefinition = "geometry(Point,4326)")
+    private Point geolocation;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "publisher_id")
+    @JoinColumn(name = "publisher_id") // This is for the regular publisher (user)
     private Publisher publisher;
 
     @OneToMany(mappedBy = "vacancy", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -95,4 +96,21 @@ public class Vacancy {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
+
+    // New fields for ATS API requirements
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private VacancyStatus status = VacancyStatus.DRAFT; // Default status
+
+    @Column(name = "external_reference")
+    private String externalReference;
+
+    @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY)
+    @CollectionTable(name = "vacancy_job_roles", joinColumns = @JoinColumn(name = "vacancy_id"))
+    @Column(name = "job_role") // Column name for each element in the collection
+    private List<String> jobRoles;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "publisher_ats_api_client_id") // Foreign key to PublisherAtsApiClient
+    private PublisherAtsApiClient publisherAtsApiClient;
 }

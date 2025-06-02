@@ -2,13 +2,14 @@ package com.example.twelvefactorapp.repository;
 
 import com.example.twelvefactorapp.model.Organisation;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor; // Added
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface OrganisationRepository extends JpaRepository<Organisation, UUID> {
+public interface OrganisationRepository extends JpaRepository<Organisation, UUID>, JpaSpecificationExecutor<Organisation> { // Extended JpaSpecificationExecutor
 
     /**
      * Finds an organisation by its name.
