@@ -1,5 +1,6 @@
 package com.example.twelvefactorapp.service;
 
+import com.example.twelvefactorapp.exception.ForbiddenAccessException; // Added
 import com.example.twelvefactorapp.exception.ResourceNotFoundException;
 import com.example.twelvefactorapp.model.JobApplication;
 import com.example.twelvefactorapp.model.Jobseeker;
@@ -84,5 +85,35 @@ public class JobApplicationService {
 
             return jobApplicationRepository.save(newApplication);
         }
+    }
+
+    /**
+     * Updates the 'completedSteps' field of a specific job application.
+     *
+     * @param applicationId   The ID of the job application to update.
+     * @param jobseekerId     The ID of the jobseeker attempting the update (for ownership verification).
+     * @param newCompletedSteps The new string value for completedSteps.
+     * @return The updated JobApplication entity.
+     * @throws ResourceNotFoundException if the job application is not found.
+     * @throws ForbiddenAccessException if the jobseeker does not own the application.
+     * @throws IllegalStateException    if the application is not in DRAFT status.
+     */
+    @Transactional
+    public JobApplication updateCompletedSteps(UUID applicationId, UUID jobseekerId, String newCompletedSteps) {
+        JobApplication jobApplication = jobApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("JobApplication", "id", applicationId));
+
+        // Verify ownership
+        if (!jobApplication.getJobseeker().getId().equals(jobseekerId)) {
+            throw new ForbiddenAccessException("Not authorized to update this application. Jobseeker ID mismatch.");
+        }
+
+        // Verify status is DRAFT
+        if (jobApplication.getStatus() != ApplicationStatus.DRAFT) {
+            throw new IllegalStateException("Application can only be updated if in DRAFT status. Current status: " + jobApplication.getStatus());
+        }
+
+        jobApplication.setCompletedSteps(newCompletedSteps);
+        return jobApplicationRepository.save(jobApplication);
     }
 }
