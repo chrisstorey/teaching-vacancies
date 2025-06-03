@@ -59,7 +59,7 @@ public class Vacancy {
     private List<WorkingPattern> workingPatterns;
 
     // 'key_stages' from DTO, maps to 'phases' in DTO. Assuming 'keyStages' is the existing field.
-    @Column(name = "key_stages") 
+    @Column(name = "key_stages")
     @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY)
     @CollectionTable(name = "vacancy_key_stages", joinColumns = @JoinColumn(name = "vacancy_id"))
     private List<String> keyStages; // This will be mapped to 'phases' in DTO

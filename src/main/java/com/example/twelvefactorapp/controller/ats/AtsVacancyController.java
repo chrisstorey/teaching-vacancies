@@ -75,7 +75,7 @@ public class AtsVacancyController {
     public ResponseEntity<AtsVacancyDto> getClientVacancyById(@PathVariable UUID id, HttpServletRequest request) {
         UUID apiClientId = getApiClientIdFromHeader(request);
         Optional<AtsVacancyDto> vacancyDtoOptional = atsVacancyService.findVacancyByIdAndApiClient(id, apiClientId);
-        
+
         return vacancyDtoOptional
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());

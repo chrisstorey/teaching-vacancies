@@ -133,8 +133,8 @@ public class VacancyService {
                     logger.info("Added LIKE predicate for jobRolesCsvString: {}", jobRoleFilter);
                 }
             }
-            
-            if (locationSearchActive && query.getResultType() == Vacancy.class) { 
+
+            if (locationSearchActive && query.getResultType() == Vacancy.class) {
                 Expression<Double> distanceExpression = cb.function("ST_Distance", Double.class,
                         root.get("geolocation"),
                         cb.literal(effectiveSearchPoint)
@@ -146,7 +146,7 @@ public class VacancyService {
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
-        
+
         return vacancyRepository.findAll(spec, pageable);
     }
 }

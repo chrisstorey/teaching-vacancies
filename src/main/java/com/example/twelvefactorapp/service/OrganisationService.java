@@ -93,7 +93,7 @@ public class OrganisationService {
                      logger.warn("Organisation location search was attempted but conditions were not fully met (e.g. geocoding failed or radius missing/invalid). Skipping ST_DWithin predicate.");
                 }
             }
-            
+
             // TODO: Consider adding distance sorting if location search is active and results are to be ordered by proximity.
             // This would likely require a native query or a more complex Criteria API setup if done with Pageable.
 

@@ -185,7 +185,7 @@ class AtsVacancyServiceTest {
                                             .orElseGet(() -> { // Directly call the converter method for test if the above is too complex
                                                  return atsVacancyService.findVacancyByIdAndApiClient(testVacancyId, testApiClientId).orElse(null);
                                             });
-        
+
         // The above map(v -> (Vacancy)null) is not ideal. Let's test convertToAtsVacancyDto more directly for null internal lists
         // Since convertToAtsVacancyDto is private, we test its effects through the public methods.
         // Or, make it package-private or use reflection if direct testing is critical (usually not needed).
@@ -199,7 +199,7 @@ class AtsVacancyServiceTest {
         when(vacancyRepository.findByIdAndPublisherAtsApiClientIdAndStatus(
                 testVacancyId, testApiClientId, VacancyStatus.PUBLISHED))
                 .thenReturn(Optional.of(testVacancy));
-        
+
         Optional<AtsVacancyDto> resultDtoOptional = atsVacancyService.findVacancyByIdAndApiClient(testVacancyId, testApiClientId);
         assertTrue(resultDtoOptional.isPresent());
         AtsVacancyDto obtainedDto = resultDtoOptional.get();

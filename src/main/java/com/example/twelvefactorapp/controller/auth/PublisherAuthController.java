@@ -47,11 +47,11 @@ public class PublisherAuthController {
                         FieldError::getDefaultMessage,
                         (existingValue, newValue) -> existingValue + "; " + newValue
                 ));
-        
+
         Map<String, Object> responseBody = new HashMap<>();
         responseBody.put("message", "Validation failed");
         responseBody.put("errors", errors);
-        
+
         return ResponseEntity.badRequest().body(responseBody);
     }
 }

@@ -2,12 +2,16 @@ package com.example.twelvefactorapp.controller.auth;
 
 import com.example.twelvefactorapp.dto.JobseekerDto;
 import com.example.twelvefactorapp.dto.JobseekerRegistrationRequest;
+import com.example.twelvefactorapp.dto.auth.JobseekerLoginRequest; // Added
+import com.example.twelvefactorapp.dto.auth.JobseekerLoginResponse; // Added
 import com.example.twelvefactorapp.exception.EmailAlreadyExistsException;
 import com.example.twelvefactorapp.model.Jobseeker;
 import com.example.twelvefactorapp.service.JobseekerRegistrationService;
+import com.example.twelvefactorapp.service.auth.JobseekerAuthenticationService; // Added
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException; // Added
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
@@ -21,9 +25,13 @@ import java.util.stream.Collectors;
 public class JobseekerAuthController {
 
     private final JobseekerRegistrationService jobseekerRegistrationService;
+    private final JobseekerAuthenticationService jobseekerAuthenticationService; // Added
 
-    public JobseekerAuthController(JobseekerRegistrationService jobseekerRegistrationService) {
+    public JobseekerAuthController(
+            JobseekerRegistrationService jobseekerRegistrationService,
+            JobseekerAuthenticationService jobseekerAuthenticationService) { // Added service to constructor
         this.jobseekerRegistrationService = jobseekerRegistrationService;
+        this.jobseekerAuthenticationService = jobseekerAuthenticationService;
     }
 
     @PostMapping("/register")
@@ -32,10 +40,16 @@ public class JobseekerAuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(JobseekerDto.fromEntity(newJobseeker));
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<JobseekerLoginResponse> loginJobseeker(@Valid @RequestBody JobseekerLoginRequest loginRequest) {
+        JobseekerLoginResponse loginResponse = jobseekerAuthenticationService.loginJobseeker(loginRequest);
+        return ResponseEntity.ok(loginResponse);
+    }
+
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<Map<String, String>> handleEmailAlreadyExistsException(EmailAlreadyExistsException ex) {
         return ResponseEntity
-                .status(HttpStatus.CONFLICT) // Using CONFLICT (409) as it's more specific for this case
+                .status(HttpStatus.CONFLICT)
                 .body(Map.of("error", ex.getMessage()));
     }
 
@@ -45,13 +59,22 @@ public class JobseekerAuthController {
                 .collect(Collectors.toMap(
                         FieldError::getField,
                         FieldError::getDefaultMessage,
-                        (existingValue, newValue) -> existingValue + "; " + newValue // In case of multiple errors for the same field
+                        (existingValue, newValue) -> existingValue + "; " + newValue
                 ));
-        
+
         Map<String, Object> responseBody = new HashMap<>();
         responseBody.put("message", "Validation failed");
         responseBody.put("errors", errors);
-        
+
         return ResponseEntity.badRequest().body(responseBody);
+    }
+
+    @ExceptionHandler(AuthenticationException.class) // Handles BadCredentialsException and others
+    public ResponseEntity<Map<String, String>> handleAuthenticationException(AuthenticationException ex) {
+        // Log the exception for server-side review if needed, but don't expose detailed internal errors to client.
+        // logger.error("Authentication failed: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "Invalid email or password")); // Generic message for security
     }
 }
